@@ -1,27 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { signIn } from 'next-auth/react'
 import {
-  Building2, User, Phone, Mail, MapPin, Lock, Eye, EyeOff,
-  Loader2, AlertCircle, CheckCircle, ArrowRight, FileText
+  Building2, User, Phone, Mail, Lock, Eye, EyeOff,
+  Loader2, AlertCircle, CheckCircle, ArrowRight
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-
-interface Wilaya { id: string; nameAr: string; code: string }
-interface Commune { id: string; nameAr: string }
 
 export default function WholesaleRegisterPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [wilayas, setWilayas] = useState<Wilaya[]>([])
-  const [communes, setCommunes] = useState<Commune[]>([])
 
   const [form, setForm] = useState({
     companyName: '',
@@ -30,24 +25,7 @@ export default function WholesaleRegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    wilayaId: '',
-    communeId: '',
-    address: '',
-    description: '',
   })
-
-  useEffect(() => {
-    fetch('/api/wilayas').then(r => r.json()).then(d => setWilayas(d.wilayas || []))
-  }, [])
-
-  useEffect(() => {
-    if (form.wilayaId) {
-      fetch(`/api/wilayas?wilayaId=${form.wilayaId}`)
-        .then(r => r.json())
-        .then(d => setCommunes(d.communes || []))
-      setForm(f => ({ ...f, communeId: '' }))
-    }
-  }, [form.wilayaId])
 
   const update = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }))
 
@@ -187,66 +165,6 @@ export default function WholesaleRegisterPage() {
                     dir="ltr"
                   />
                 </div>
-              </div>
-            </div>
-
-            {/* Wilaya & Commune */}
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div className="form-group">
-                <label className="form-label">الولاية</label>
-                <div className="relative">
-                  <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <select
-                    className="form-input pr-9 appearance-none"
-                    value={form.wilayaId}
-                    onChange={e => update('wilayaId', e.target.value)}
-                  >
-                    <option value="">-- اختر الولاية --</option>
-                    {wilayas.map(w => (
-                      <option key={w.id} value={w.id}>{w.nameAr}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="form-group">
-                <label className="form-label">البلدية</label>
-                <select
-                  className="form-input appearance-none"
-                  value={form.communeId}
-                  onChange={e => update('communeId', e.target.value)}
-                  disabled={!form.wilayaId || communes.length === 0}
-                >
-                  <option value="">-- اختر البلدية --</option>
-                  {communes.map(c => (
-                    <option key={c.id} value={c.id}>{c.nameAr}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Address */}
-            <div className="form-group">
-              <label className="form-label">العنوان التفصيلي</label>
-              <input
-                className="form-input"
-                placeholder="الحي، الشارع، رقم المحل..."
-                value={form.address}
-                onChange={e => update('address', e.target.value)}
-              />
-            </div>
-
-            {/* Description */}
-            <div className="form-group">
-              <label className="form-label">وصف النشاط</label>
-              <div className="relative">
-                <FileText className="absolute right-3 top-3 w-4 h-4 text-slate-400" />
-                <textarea
-                  className="form-input pr-9 resize-none"
-                  rows={3}
-                  placeholder="اكتب وصفاً مختصراً عن نشاطك التجاري..."
-                  value={form.description}
-                  onChange={e => update('description', e.target.value)}
-                />
               </div>
             </div>
 

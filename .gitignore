@@ -36,3 +36,6 @@ yarn-error.log*
 # SQLite databases
 *.db
 *.db-journal
+
+# Binaries
+*.exe

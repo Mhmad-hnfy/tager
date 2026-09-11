@@ -38,6 +38,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'رقم الهاتف مسجل مسبقاً' }, { status: 400 })
     }
 
+    const cleanEmail = data.email && data.email.trim() ? data.email.toLowerCase().trim() : null
+    if (cleanEmail) {
+      const existingEmail = await prisma.user.findUnique({ where: { email: cleanEmail } })
+      if (existingEmail) {
+        return NextResponse.json({ error: 'البريد الإلكتروني مسجل مسبقاً' }, { status: 400 })
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(data.password, 12)
 
     if (type === 'WHOLESALE') {
@@ -47,7 +55,7 @@ export async function POST(req: NextRequest) {
       const user = await prisma.user.create({
         data: {
           phone: data.phone,
-          email: data.email || null,
+          email: cleanEmail,
           password: hashedPassword,
           role: 'WHOLESALE',
           wholesaleProfile: {
@@ -73,7 +81,7 @@ export async function POST(req: NextRequest) {
       const user = await prisma.user.create({
         data: {
           phone: data.phone,
-          email: data.email || null,
+          email: cleanEmail,
           password: hashedPassword,
           role: 'RETAIL',
           retailProfile: {

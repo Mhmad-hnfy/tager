@@ -79,15 +79,15 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Phone */}
             <div className="form-group">
-              <label className="form-label">رقم الهاتف</label>
+              <label className="form-label">رقم الهاتف أو البريد الإلكتروني</label>
               <div className="relative">
                 <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
-                  type="tel"
+                  type="text"
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
                   className="form-input pr-10"
-                  placeholder="0555 123 456"
+                  placeholder="0555 123 456 أو admin@tujaruna.dz"
                   required
                   dir="ltr"
                 />
