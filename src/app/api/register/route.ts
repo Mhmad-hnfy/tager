@@ -13,6 +13,7 @@ const wholesaleSchema = z.object({
   communeId: z.string().optional(),
   address: z.string().optional(),
   description: z.string().optional(),
+  mapUrl: z.string().optional().or(z.literal('')),
 })
 
 const retailSchema = z.object({
@@ -25,6 +26,8 @@ const retailSchema = z.object({
   communeId: z.string().optional(),
   address: z.string().optional(),
   description: z.string().optional(),
+  mapUrl: z.string().optional().or(z.literal('')),
+  zoneName: z.string().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -67,6 +70,7 @@ export async function POST(req: NextRequest) {
               communeId: data.communeId || null,
               address: data.address || null,
               description: data.description || null,
+              mapUrl: data.mapUrl || null,
             }
           }
         }
@@ -93,6 +97,8 @@ export async function POST(req: NextRequest) {
               communeId: data.communeId || null,
               address: data.address || null,
               description: data.description || null,
+              mapUrl: data.mapUrl || null,
+              zoneName: data.zoneName || null,
             }
           }
         }

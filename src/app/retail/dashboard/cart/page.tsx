@@ -10,6 +10,7 @@ import { ShoppingCart, Trash2, Plus, Minus, Package, ArrowRight, Loader2, AlertC
 import toast from 'react-hot-toast'
 import { useCart } from '@/store/cartStore'
 import { cn, formatPrice } from '@/lib/utils'
+import { InvoiceModal } from '@/components/InvoiceModal'
 
 export default function CartPage() {
   const { data: session } = useSession()
@@ -17,6 +18,7 @@ export default function CartPage() {
   const { items, removeItem, updateQty, clearCart, total, wholesaleId, itemCount } = useCart()
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [createdOrderForInvoice, setCreatedOrderForInvoice] = useState<any | null>(null)
 
   const handleSubmitOrder = async () => {
     if (!session?.user) { router.push('/auth/login'); return }
@@ -38,7 +40,15 @@ export default function CartPage() {
 
       toast.success('تم إرسال الطلب بنجاح! 🎉')
       clearCart()
-      router.push('/retail/dashboard/orders')
+
+      // Fetch full order for immediate invoice download/print
+      try {
+        const orderRes = await fetch(`/api/orders/${data.order.id}`)
+        const orderData = await orderRes.json()
+        setCreatedOrderForInvoice(orderData.order || data.order)
+      } catch {
+        router.push('/retail/dashboard/orders')
+      }
     } catch {
       toast.error('حدث خطأ في الاتصال')
     } finally {
@@ -193,6 +203,17 @@ export default function CartPage() {
           {submitting ? 'جاري الإرسال...' : 'إرسال الطلب'}
         </button>
       </div>
+
+      {/* Invoice Modal */}
+      {createdOrderForInvoice && (
+        <InvoiceModal
+          order={createdOrderForInvoice}
+          onClose={() => {
+            setCreatedOrderForInvoice(null)
+            router.push('/retail/dashboard/orders')
+          }}
+        />
+      )}
     </div>
   )
 }

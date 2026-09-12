@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ClipboardList, ChevronDown, Package, Loader2 } from 'lucide-react'
+import { ClipboardList, ChevronDown, Package, Loader2, FileText } from 'lucide-react'
 import { cn, formatPrice, formatDate, getOrderStatusLabel, getOrderStatusColor, generateOrderNumber } from '@/lib/utils'
+import { InvoiceModal } from '@/components/InvoiceModal'
 
 export default function RetailOrdersPage() {
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<any | null>(null)
 
   useEffect(() => {
     fetch('/api/orders')
@@ -60,8 +62,19 @@ export default function RetailOrdersPage() {
                       {order.wholesale?.companyName} · {order.items?.length} منتج
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <span className="font-black text-primary-700">{formatPrice(order.total)}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedInvoiceOrder(order)
+                      }}
+                      className="btn btn-sm bg-slate-800 text-white hover:bg-slate-900 text-xs flex items-center gap-1 shadow-2xs"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-primary-400" />
+                      <span>الفاتورة</span>
+                    </button>
                     <ChevronDown className={cn('w-4 h-4 text-slate-400 transition-transform', expanded === order.id && 'rotate-180')} />
                   </div>
                 </div>
@@ -107,6 +120,17 @@ export default function RetailOrdersPage() {
                           <span className="font-semibold">ملاحظاتك: </span>{order.notes}
                         </div>
                       )}
+
+                      <div className="pt-2 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedInvoiceOrder(order)}
+                          className="btn btn-sm bg-primary-700 hover:bg-primary-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs"
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span>📄 استعراض وتنزيل الفاتورة (PDF / صورة / طباعة)</span>
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 )}
@@ -114,6 +138,14 @@ export default function RetailOrdersPage() {
             </motion.div>
           ))}
         </div>
+      )}
+
+      {/* Invoice Modal */}
+      {selectedInvoiceOrder && (
+        <InvoiceModal
+          order={selectedInvoiceOrder}
+          onClose={() => setSelectedInvoiceOrder(null)}
+        />
       )}
     </div>
   )

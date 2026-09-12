@@ -25,6 +25,21 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     return NextResponse.json({ error: 'غير مصرح' }, { status: 403 })
   }
 
-  await prisma.user.delete({ where: { id: params.id } })
-  return NextResponse.json({ success: true })
+  // Prevent admin from deleting their own account
+  if (session.user.id === params.id) {
+    return NextResponse.json({ error: 'لا يمكنك حذف حساب المدير الحالي' }, { status: 400 })
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: params.id } })
+    if (!user) {
+      return NextResponse.json({ error: 'المستخدم غير موجود' }, { status: 404 })
+    }
+
+    await prisma.user.delete({ where: { id: params.id } })
+    return NextResponse.json({ success: true, message: 'تم حذف الحساب وجميع البيانات المرتبطة به بنجاح' })
+  } catch (err) {
+    console.error('Error deleting user:', err)
+    return NextResponse.json({ error: 'حدث خطأ أثناء حذف الحساب. يرجى المحاولة لاحقاً.' }, { status: 500 })
+  }
 }

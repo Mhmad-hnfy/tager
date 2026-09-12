@@ -2,27 +2,27 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { motion } from 'framer-motion'
-import { useRouter } from 'next/navigation'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   User, Phone, Mail, MapPin, Building2,
-  Save, Loader2, Camera, FileText, Edit2
+  Save, Loader2, FileText, Edit2, Lock, Eye, EyeOff, CheckCircle, X
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
+import { cn } from '@/lib/utils'
 
 interface Wilaya { id: string; nameAr: string }
 interface Commune { id: string; nameAr: string }
 
 export default function WholesaleProfilePage() {
   const { data: session } = useSession()
-  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [wilayas, setWilayas] = useState<Wilaya[]>([])
   const [communes, setCommunes] = useState<Commune[]>([])
   const [profile, setProfile] = useState<any>(null)
   const [editing, setEditing] = useState(false)
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [form, setForm] = useState({
     companyName: '',
     ownerName: '',
@@ -32,6 +32,11 @@ export default function WholesaleProfilePage() {
     address: '',
     description: '',
   })
+
+  // Password change form
+  const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
+  const [showPw, setShowPw] = useState({ current: false, new: false, confirm: false })
+  const [savingPw, setSavingPw] = useState(false)
 
   useEffect(() => {
     fetch('/api/wilayas').then(r => r.json()).then(d => setWilayas(d.wilayas || []))
@@ -78,13 +83,42 @@ export default function WholesaleProfilePage() {
       })
       const data = await res.json()
       if (!res.ok) { toast.error(data.error || 'خطأ في الحفظ'); return }
-      toast.success('تم حفظ التغييرات بنجاح')
+      toast.success('تم حفظ التغييرات بنجاح ✅')
       setEditing(false)
       fetchProfile()
     } catch {
       toast.error('حدث خطأ')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      toast.error('كلمتا المرور الجديدتان غير متطابقتان')
+      return
+    }
+    if (pwForm.newPassword.length < 6) {
+      toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل')
+      return
+    }
+    setSavingPw(true)
+    try {
+      const res = await fetch('/api/profile/change-password', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error || 'خطأ'); return }
+      toast.success('تم تغيير كلمة المرور بنجاح 🔒')
+      setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
+      setShowPasswordModal(false)
+    } catch {
+      toast.error('حدث خطأ')
+    } finally {
+      setSavingPw(false)
     }
   }
 
@@ -101,11 +135,19 @@ export default function WholesaleProfilePage() {
           <h1 className="section-title">ملفي الشخصي</h1>
           <p className="section-subtitle">إدارة معلومات حسابك</p>
         </div>
-        {!editing && (
-          <button onClick={() => setEditing(true)} className="btn btn-outline btn-sm">
-            <Edit2 className="w-4 h-4" /> تعديل
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowPasswordModal(true)}
+            className="btn btn-ghost btn-sm"
+          >
+            <Lock className="w-4 h-4" /> تغيير كلمة المرور
           </button>
-        )}
+          {!editing && (
+            <button onClick={() => setEditing(true)} className="btn btn-outline btn-sm">
+              <Edit2 className="w-4 h-4" /> تعديل
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Profile Card */}
@@ -265,6 +307,114 @@ export default function WholesaleProfilePage() {
           )}
         </form>
       </motion.div>
+
+      {/* Change Password Modal */}
+      <AnimatePresence>
+        {showPasswordModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowPasswordModal(false)}
+              className="fixed inset-0 bg-black/50 z-50"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+                <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center">
+                      <Lock className="w-4 h-4 text-primary-600" />
+                    </div>
+                    <h3 className="font-bold text-slate-800">تغيير كلمة المرور</h3>
+                  </div>
+                  <button onClick={() => setShowPasswordModal(false)} className="p-2 hover:bg-slate-100 rounded-lg">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <form onSubmit={handleChangePassword} className="p-5 space-y-4">
+                  {/* Current Password */}
+                  <div className="form-group">
+                    <label className="form-label">كلمة المرور الحالية *</label>
+                    <div className="relative">
+                      <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        className="form-input pr-9 pl-9"
+                        type={showPw.current ? 'text' : 'password'}
+                        value={pwForm.currentPassword}
+                        onChange={e => setPwForm(f => ({ ...f, currentPassword: e.target.value }))}
+                        required
+                      />
+                      <button type="button" onClick={() => setShowPw(s => ({ ...s, current: !s.current }))}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                        {showPw.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* New Password */}
+                  <div className="form-group">
+                    <label className="form-label">كلمة المرور الجديدة *</label>
+                    <div className="relative">
+                      <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        className="form-input pr-9 pl-9"
+                        type={showPw.new ? 'text' : 'password'}
+                        value={pwForm.newPassword}
+                        onChange={e => setPwForm(f => ({ ...f, newPassword: e.target.value }))}
+                        required
+                        minLength={6}
+                        placeholder="6 أحرف على الأقل"
+                      />
+                      <button type="button" onClick={() => setShowPw(s => ({ ...s, new: !s.new }))}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                        {showPw.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div className="form-group">
+                    <label className="form-label">تأكيد كلمة المرور الجديدة *</label>
+                    <div className="relative">
+                      <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        className="form-input pr-9 pl-9"
+                        type={showPw.confirm ? 'text' : 'password'}
+                        value={pwForm.confirmPassword}
+                        onChange={e => setPwForm(f => ({ ...f, confirmPassword: e.target.value }))}
+                        required
+                      />
+                      <button type="button" onClick={() => setShowPw(s => ({ ...s, confirm: !s.confirm }))}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                        {showPw.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                      {pwForm.confirmPassword && (
+                        <div className={cn('absolute left-9 top-1/2 -translate-y-1/2',
+                          pwForm.newPassword === pwForm.confirmPassword ? 'text-green-500' : 'text-danger-500'
+                        )}>
+                          <CheckCircle className="w-4 h-4" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button type="submit" disabled={savingPw} className="btn btn-primary flex-1">
+                      {savingPw ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+                      {savingPw ? 'جاري الحفظ...' : 'تغيير كلمة المرور'}
+                    </button>
+                    <button type="button" onClick={() => setShowPasswordModal(false)} className="btn btn-ghost">
+                      إلغاء
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

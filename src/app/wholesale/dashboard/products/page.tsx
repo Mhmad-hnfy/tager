@@ -5,12 +5,19 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import {
   Plus, Search, Edit, Trash2, Eye, EyeOff, Package,
-  Loader2, X, Upload, AlertCircle, CheckCircle, ToggleLeft, ToggleRight
+  Loader2, X, Upload, CheckCircle, ToggleLeft, ToggleRight,
+  AlertTriangle, ChevronDown, Tag, Layers
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { cn, formatPrice, parseImages } from '@/lib/utils'
 
-interface Category { id: string; nameAr: string }
+interface Category {
+  id: string
+  nameAr: string
+  parentId: string | null
+  children?: Category[]
+}
+
 interface Product {
   id: string
   nameAr: string
@@ -30,17 +37,23 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterCat, setFilterCat] = useState('')
+  const [filterAvailability, setFilterAvailability] = useState<'all' | 'available' | 'out'>('all')
   const [showModal, setShowModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [uploadingImages, setUploadingImages] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  // Form state
   const [form, setForm] = useState({
     nameAr: '', nameFr: '', description: '',
-    price: '', quantity: '', categoryId: '',
+    price: '', quantity: '', categoryId: '', parentCategoryId: '',
     isAvailable: true, images: [] as string[],
   })
   const [saving, setSaving] = useState(false)
+
+  // Hierarchical categories derived
+  const rootCategories = categories.filter(c => !c.parentId)
+  const subCategories = categories.filter(c => c.parentId === form.parentCategoryId && !!form.parentCategoryId)
 
   const fetchProducts = async () => {
     setLoading(true)
@@ -63,34 +76,56 @@ export default function ProductsPage() {
 
   const openAddModal = () => {
     setEditingProduct(null)
-    setForm({ nameAr: '', nameFr: '', description: '', price: '', quantity: '', categoryId: '', isAvailable: true, images: [] })
+    setForm({ nameAr: '', nameFr: '', description: '', price: '', quantity: '', categoryId: '', parentCategoryId: '', isAvailable: true, images: [] })
     setShowModal(true)
   }
 
   const openEditModal = (p: Product) => {
     setEditingProduct(p)
+    // Determine if this category has a parent
+    const cat = categories.find(c => c.id === p.category?.id)
+    const parentCat = cat?.parentId ? categories.find(c => c.id === cat.parentId) : null
     setForm({
       nameAr: p.nameAr, nameFr: p.nameFr || '', description: p.description || '',
-      price: String(p.price), quantity: String(p.quantity), categoryId: p.category?.id || '',
+      price: String(p.price), quantity: String(p.quantity),
+      categoryId: p.category?.id || '',
+      parentCategoryId: cat?.parentId || '',
       isAvailable: p.isAvailable, images: parseImages(p.images),
     })
     setShowModal(true)
   }
 
   const handleImageUpload = async (files: FileList) => {
+    if (!files || files.length === 0) return
     setUploadingImages(true)
     try {
       const formData = new FormData()
       Array.from(files).forEach(f => formData.append('files', f))
-      const res = await fetch('/api/upload', { method: 'POST', body: formData })
-      const data = await res.json()
-      if (data.paths) {
-        setForm(f => ({ ...f, images: [...f.images, ...data.paths] }))
+      // Don't set Content-Type header - let browser set it with boundary for multipart
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+        // No Content-Type header - browser sets it automatically with correct boundary
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        toast.error(err.error || 'خطأ في رفع الصور')
+        return
       }
-    } catch {
-      toast.error('خطأ في رفع الصور')
+      const data = await res.json()
+      if (data.paths && data.paths.length > 0) {
+        setForm(f => ({ ...f, images: [...f.images, ...data.paths] }))
+        toast.success(`تم رفع ${data.paths.length} صورة بنجاح`)
+      } else {
+        toast.error('لم يتم رفع أي صورة - تأكد من أن الملفات صور صحيحة')
+      }
+    } catch (err) {
+      console.error('Upload error:', err)
+      toast.error('خطأ في الاتصال أثناء رفع الصور')
     } finally {
       setUploadingImages(false)
+      // Reset file input
+      if (fileRef.current) fileRef.current.value = ''
     }
   }
 
@@ -98,9 +133,21 @@ export default function ProductsPage() {
     e.preventDefault()
     if (!form.nameAr || !form.price) { toast.error('اسم المنتج والسعر مطلوبان'); return }
 
+    // Use sub-category if selected, otherwise use parent category
+    const finalCategoryId = form.categoryId || form.parentCategoryId || ''
+
     setSaving(true)
     try {
-      const body = { ...form, price: parseFloat(form.price), quantity: parseInt(form.quantity) || 0 }
+      const body = {
+        nameAr: form.nameAr,
+        nameFr: form.nameFr,
+        description: form.description,
+        price: parseFloat(form.price),
+        quantity: parseInt(form.quantity) || 0,
+        categoryId: finalCategoryId || null,
+        images: form.images,
+        isAvailable: form.isAvailable,
+      }
       const url = editingProduct ? `/api/products/${editingProduct.id}` : '/api/products'
       const method = editingProduct ? 'PUT' : 'POST'
 
@@ -109,7 +156,7 @@ export default function ProductsPage() {
 
       if (!res.ok) { toast.error(data.error || 'خطأ في الحفظ'); return }
 
-      toast.success(editingProduct ? 'تم تعديل المنتج' : 'تم إضافة المنتج')
+      toast.success(editingProduct ? 'تم تعديل المنتج ✅' : 'تم إضافة المنتج 🎉')
       setShowModal(false)
       fetchProducts()
     } catch {
@@ -138,8 +185,15 @@ export default function ProductsPage() {
   const filtered = products.filter(p => {
     const matchSearch = !search || p.nameAr.includes(search)
     const matchCat = !filterCat || p.category?.id === filterCat
-    return matchSearch && matchCat
+    const matchAvail = filterAvailability === 'all'
+      ? true
+      : filterAvailability === 'out'
+        ? p.quantity === 0
+        : p.quantity > 0
+    return matchSearch && matchCat && matchAvail
   })
+
+  const outOfStockCount = products.filter(p => p.quantity === 0).length
 
   return (
     <div className="space-y-5">
@@ -147,7 +201,15 @@ export default function ProductsPage() {
       <div className="page-header">
         <div>
           <h1 className="section-title">المنتجات</h1>
-          <p className="section-subtitle">{products.length} منتج</p>
+          <p className="section-subtitle">
+            {products.length} منتج
+            {outOfStockCount > 0 && (
+              <span className="inline-flex items-center gap-1 mr-2 text-orange-600 font-semibold">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                {outOfStockCount} نفذت كميته
+              </span>
+            )}
+          </p>
         </div>
         <button onClick={openAddModal} className="btn btn-primary">
           <Plus className="w-4 h-4" />
@@ -167,13 +229,39 @@ export default function ProductsPage() {
           />
         </div>
         <select
-          className="form-input sm:w-48 appearance-none"
+          className="form-input sm:w-44 appearance-none"
           value={filterCat}
           onChange={e => setFilterCat(e.target.value)}
         >
           <option value="">جميع الأقسام</option>
-          {categories.map(c => <option key={c.id} value={c.id}>{c.nameAr}</option>)}
+          {rootCategories.map(c => (
+            <optgroup key={c.id} label={c.nameAr}>
+              <option value={c.id}>{c.nameAr} (الكل)</option>
+              {categories.filter(sub => sub.parentId === c.id).map(sub => (
+                <option key={sub.id} value={sub.id}>— {sub.nameAr}</option>
+              ))}
+            </optgroup>
+          ))}
+          {categories.filter(c => !c.parentId && !rootCategories.some(r => r.id === c.id)).map(c => (
+            <option key={c.id} value={c.id}>{c.nameAr}</option>
+          ))}
         </select>
+        <div className="flex gap-1.5">
+          {(['all', 'available', 'out'] as const).map(f => (
+            <button
+              key={f}
+              onClick={() => setFilterAvailability(f)}
+              className={cn(
+                'px-3 py-2 rounded-xl text-xs font-semibold border transition-all whitespace-nowrap',
+                filterAvailability === f
+                  ? f === 'out' ? 'bg-orange-600 text-white border-orange-600' : 'bg-primary-700 text-white border-primary-700'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              )}
+            >
+              {f === 'all' ? 'الكل' : f === 'available' ? '✅ متوفر' : '🔴 نفذ'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Products grid */}
@@ -195,6 +283,7 @@ export default function ProductsPage() {
           <AnimatePresence>
             {filtered.map((product, i) => {
               const images = parseImages(product.images)
+              const isOutOfStock = product.quantity === 0
               return (
                 <motion.div
                   key={product.id}
@@ -218,9 +307,12 @@ export default function ProductsPage() {
                         <span className="badge bg-slate-700 text-white"><EyeOff className="w-3 h-3" /> مخفي</span>
                       </div>
                     )}
-                    {!product.isAvailable && (
-                      <div className="absolute top-2 right-2">
-                        <span className="badge bg-red-100 text-danger-600">غير متوفر</span>
+                    {/* Out of stock overlay */}
+                    {isOutOfStock && !product.isHidden && (
+                      <div className="absolute inset-0 bg-orange-900/30 flex items-center justify-center">
+                        <span className="badge bg-orange-600 text-white font-bold text-xs px-3 py-1">
+                          🔴 نفذت الكمية
+                        </span>
                       </div>
                     )}
                   </div>
@@ -233,7 +325,12 @@ export default function ProductsPage() {
                     )}
                     <div className="flex items-center justify-between mt-2">
                       <span className="font-black text-primary-700">{formatPrice(product.price)}</span>
-                      <span className="text-xs text-slate-400">الكمية: {product.quantity}</span>
+                      <span className={cn(
+                        'text-xs font-semibold px-2 py-0.5 rounded-lg',
+                        isOutOfStock ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600'
+                      )}>
+                        {isOutOfStock ? '🔴 نفذ' : `${product.quantity} وحدة`}
+                      </span>
                     </div>
                   </div>
 
@@ -284,7 +381,7 @@ export default function ProductsPage() {
               className="fixed inset-0 z-50 flex items-center justify-center p-4"
             >
               <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-                <div className="p-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl">
+                <div className="p-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl z-10">
                   <h2 className="font-bold text-slate-800">
                     {editingProduct ? 'تعديل المنتج' : 'إضافة منتج جديد'}
                   </h2>
@@ -298,15 +395,26 @@ export default function ProductsPage() {
                   <div className="form-group">
                     <label className="form-label">صور المنتج</label>
                     <div
-                      onClick={() => fileRef.current?.click()}
-                      className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center cursor-pointer hover:border-primary-300 hover:bg-primary-50/30 transition-all"
+                      onClick={() => !uploadingImages && fileRef.current?.click()}
+                      className={cn(
+                        'border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all',
+                        uploadingImages
+                          ? 'border-primary-300 bg-primary-50/30 cursor-wait'
+                          : 'border-slate-200 hover:border-primary-300 hover:bg-primary-50/30'
+                      )}
                     >
                       {uploadingImages ? (
-                        <Loader2 className="w-6 h-6 animate-spin text-primary-600 mx-auto mb-1" />
+                        <div className="flex flex-col items-center gap-2">
+                          <Loader2 className="w-7 h-7 animate-spin text-primary-600" />
+                          <p className="text-sm text-primary-600 font-medium">جاري رفع الصور...</p>
+                        </div>
                       ) : (
-                        <Upload className="w-6 h-6 text-slate-400 mx-auto mb-1" />
+                        <div className="flex flex-col items-center gap-2">
+                          <Upload className="w-7 h-7 text-slate-400" />
+                          <p className="text-sm text-slate-500">اضغط لرفع الصور</p>
+                          <p className="text-xs text-slate-400">JPG, PNG, WEBP - حتى 5MB لكل صورة</p>
+                        </div>
                       )}
-                      <p className="text-xs text-slate-500">اضغط لرفع الصور</p>
                     </div>
                     <input
                       ref={fileRef}
@@ -317,19 +425,26 @@ export default function ProductsPage() {
                       onChange={e => e.target.files && handleImageUpload(e.target.files)}
                     />
                     {form.images.length > 0 && (
-                      <div className="flex gap-2 mt-2 flex-wrap">
+                      <div className="flex gap-2 mt-3 flex-wrap">
                         {form.images.map((img, i) => (
-                          <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200">
+                          <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-slate-200 group/img">
                             <Image src={img} alt="" fill className="object-cover" />
                             <button
                               type="button"
                               onClick={() => setForm(f => ({ ...f, images: f.images.filter((_, j) => j !== i) }))}
-                              className="absolute top-0 right-0 bg-red-500 text-white rounded-bl-lg p-0.5"
+                              className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center"
                             >
-                              <X className="w-3 h-3" />
+                              <X className="w-5 h-5" />
                             </button>
                           </div>
                         ))}
+                        <button
+                          type="button"
+                          onClick={() => fileRef.current?.click()}
+                          className="w-20 h-20 border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:border-primary-300 hover:text-primary-500 transition-colors"
+                        >
+                          <Plus className="w-6 h-6" />
+                        </button>
                       </div>
                     )}
                   </div>
@@ -353,18 +468,65 @@ export default function ProductsPage() {
                       <input className="form-input" type="number" min="0" step="0.01" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} required />
                     </div>
                     <div className="form-group">
-                      <label className="form-label">الكمية</label>
-                      <input className="form-input" type="number" min="0" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} />
+                      <label className="form-label">الكمية في المخزن</label>
+                      <input
+                        className={cn('form-input', parseInt(form.quantity) === 0 && form.quantity !== '' && 'border-orange-300 bg-orange-50')}
+                        type="number" min="0" value={form.quantity}
+                        onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
+                      />
+                      {form.quantity !== '' && parseInt(form.quantity) === 0 && (
+                        <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" /> الكمية = 0، سيظهر المنتج كـ "نفذت الكمية"
+                        </p>
+                      )}
                     </div>
                   </div>
 
-                  {/* Category */}
-                  <div className="form-group">
-                    <label className="form-label">القسم</label>
-                    <select className="form-input appearance-none" value={form.categoryId} onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}>
-                      <option value="">-- بدون قسم --</option>
-                      {categories.map(c => <option key={c.id} value={c.id}>{c.nameAr}</option>)}
-                    </select>
+                  {/* Hierarchical Category Selection */}
+                  <div className="space-y-3 bg-slate-50 rounded-xl p-3 border border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-primary-600" />
+                      <span className="text-sm font-semibold text-slate-700">تصنيف المنتج</span>
+                    </div>
+
+                    {/* Parent / Main Category */}
+                    <div className="form-group mb-0">
+                      <label className="form-label text-xs">القسم الرئيسي</label>
+                      <select
+                        className="form-input appearance-none"
+                        value={form.parentCategoryId}
+                        onChange={e => setForm(f => ({ ...f, parentCategoryId: e.target.value, categoryId: '' }))}
+                      >
+                        <option value="">-- بدون قسم رئيسي --</option>
+                        {rootCategories.map(c => (
+                          <option key={c.id} value={c.id}>{c.nameAr}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Sub Category (Branches) - show only if parent selected and has children */}
+                    {form.parentCategoryId && (() => {
+                      const subs = categories.filter(c => c.parentId === form.parentCategoryId)
+                      return subs.length > 0 ? (
+                        <div className="form-group mb-0">
+                          <label className="form-label text-xs">الفرع (النوع)</label>
+                          <select
+                            className="form-input appearance-none"
+                            value={form.categoryId}
+                            onChange={e => setForm(f => ({ ...f, categoryId: e.target.value }))}
+                          >
+                            <option value="">-- كل الفروع --</option>
+                            {subs.map(s => (
+                              <option key={s.id} value={s.id}>{s.nameAr}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-400 flex items-center gap-1">
+                          <Tag className="w-3 h-3" /> لا توجد فروع لهذا القسم. يمكن إضافتها من صفحة الأقسام.
+                        </p>
+                      )
+                    })()}
                   </div>
 
                   {/* Description */}
@@ -375,7 +537,7 @@ export default function ProductsPage() {
 
                   {/* Available */}
                   <div className="flex items-center justify-between bg-slate-50 rounded-xl p-3">
-                    <span className="text-sm font-medium text-slate-700">متوفر في المخزن</span>
+                    <span className="text-sm font-medium text-slate-700">متوفر للطلب</span>
                     <button
                       type="button"
                       onClick={() => setForm(f => ({ ...f, isAvailable: !f.isAvailable }))}

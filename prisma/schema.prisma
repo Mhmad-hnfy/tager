@@ -44,16 +44,18 @@ model WholesaleProfile {
   address     String?
   description String?
   logo        String?
+  mapUrl      String?
   isVerified  Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  wilaya     Wilaya?    @relation(fields: [wilayaId], references: [id])
-  commune    Commune?   @relation(fields: [communeId], references: [id])
-  products   Product[]
-  categories Category[]
-  orders     Order[]
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wilaya            Wilaya?            @relation(fields: [wilayaId], references: [id])
+  commune           Commune?           @relation(fields: [communeId], references: [id])
+  products          Product[]
+  categories        Category[]
+  orders            Order[]
+  deliverySchedules DeliverySchedule[]
 
   @@map("wholesale_profiles")
 }
@@ -68,6 +70,8 @@ model RetailProfile {
   communeId   String?
   address     String?
   description String?
+  mapUrl      String?
+  zoneName    String?  // اسم منطقة التاجر للتوصيل
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -88,6 +92,7 @@ model Wilaya {
   communes          Commune[]
   wholesaleProfiles WholesaleProfile[]
   retailProfiles    RetailProfile[]
+  deliverySchedules DeliverySchedule[]
 
   @@map("wilayas")
 }
@@ -112,10 +117,13 @@ model Category {
   icon        String?
   wholesaleId String?
   isGlobal    Boolean  @default(false)
+  parentId    String?  // للأقسام الفرعية (الفروع)
   createdAt   DateTime @default(now())
 
   wholesale WholesaleProfile? @relation(fields: [wholesaleId], references: [id], onDelete: Cascade)
   products  Product[]
+  parent    Category?          @relation("CategoryChildren", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Category[]         @relation("CategoryChildren")
 
   @@map("categories")
 }
@@ -152,11 +160,30 @@ model Order {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  retail    RetailProfile    @relation(fields: [retailId], references: [id])
-  wholesale WholesaleProfile @relation(fields: [wholesaleId], references: [id])
+  retail    RetailProfile    @relation(fields: [retailId], references: [id], onDelete: Cascade)
+  wholesale WholesaleProfile @relation(fields: [wholesaleId], references: [id], onDelete: Cascade)
   items     OrderItem[]
 
   @@map("orders")
+}
+
+model DeliverySchedule {
+  id           String   @id @default(cuid())
+  wholesaleId  String
+  dayOfWeek    Int
+  dayNameAr    String
+  wilayaId     String?
+  zoneName     String
+  communeNames String?
+  notes        String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  wholesale WholesaleProfile @relation(fields: [wholesaleId], references: [id], onDelete: Cascade)
+  wilaya    Wilaya?          @relation(fields: [wilayaId], references: [id])
+
+  @@map("delivery_schedules")
 }
 
 model OrderItem {

@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ClipboardList, Search, ChevronDown, Loader2, RefreshCw, Store, ShoppingBag } from 'lucide-react'
+import { ClipboardList, Search, ChevronDown, Loader2, RefreshCw, Store, ShoppingBag, FileText } from 'lucide-react'
 import { cn, formatPrice, formatDate, getOrderStatusLabel, getOrderStatusColor, generateOrderNumber } from '@/lib/utils'
+import { InvoiceModal } from '@/components/InvoiceModal'
 
 const STATUS_FILTERS = [
   { value: '', label: 'الكل' },
@@ -21,6 +22,7 @@ export default function AdminOrdersPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [search, setSearch] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<any | null>(null)
 
   const fetchOrders = async () => {
     setLoading(true)
@@ -133,8 +135,19 @@ export default function AdminOrdersPage() {
                     <span className="font-medium">{order.wholesale?.companyName}</span>
                   </div>
 
-                  <div className="mr-auto flex items-center gap-3">
+                  <div className="mr-auto flex items-center gap-2.5">
                     <span className="font-black text-primary-700 text-sm">{formatPrice(order.total)}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedInvoiceOrder(order)
+                      }}
+                      className="btn btn-sm bg-slate-800 text-white hover:bg-slate-700 text-xs flex items-center gap-1 shadow-2xs"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-primary-400" />
+                      <span>الفاتورة</span>
+                    </button>
                     <span className="text-xs text-slate-400">{order.items?.length} منتج</span>
                     <ChevronDown className={cn('w-4 h-4 text-slate-400 transition-transform', expanded === order.id && 'rotate-180')} />
                   </div>
@@ -203,6 +216,14 @@ export default function AdminOrdersPage() {
             </motion.div>
           ))}
         </div>
+      )}
+
+      {/* Invoice Modal */}
+      {selectedInvoiceOrder && (
+        <InvoiceModal
+          order={selectedInvoiceOrder}
+          onClose={() => setSelectedInvoiceOrder(null)}
+        />
       )}
     </div>
   )

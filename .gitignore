@@ -39,3 +39,7 @@ yarn-error.log*
 
 # Binaries
 *.exe
+
+# Uploaded files
+/public/uploads/*
+!/public/uploads/**/.gitkeep

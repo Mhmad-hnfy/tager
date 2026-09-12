@@ -11,6 +11,7 @@
 DROP TABLE IF EXISTS "notifications" CASCADE;
 DROP TABLE IF EXISTS "order_items" CASCADE;
 DROP TABLE IF EXISTS "orders" CASCADE;
+DROP TABLE IF EXISTS "delivery_schedules" CASCADE;
 DROP TABLE IF EXISTS "products" CASCADE;
 DROP TABLE IF EXISTS "categories" CASCADE;
 DROP TABLE IF EXISTS "communes" CASCADE;
@@ -46,6 +47,7 @@ CREATE TABLE "wholesale_profiles" (
     "address" TEXT,
     "description" TEXT,
     "logo" TEXT,
+    "mapUrl" TEXT,
     "isVerified" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -62,6 +64,8 @@ CREATE TABLE "retail_profiles" (
     "communeId" TEXT,
     "address" TEXT,
     "description" TEXT,
+    "mapUrl" TEXT,
+    "zoneName" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -90,7 +94,23 @@ CREATE TABLE "categories" (
     "icon" TEXT,
     "wholesaleId" TEXT,
     "isGlobal" BOOLEAN NOT NULL DEFAULT false,
+    "parentId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- جدول مواعيد التوزيع (Delivery Schedules)
+CREATE TABLE "delivery_schedules" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "wholesaleId" TEXT NOT NULL,
+    "dayOfWeek" INTEGER NOT NULL,
+    "dayNameAr" TEXT NOT NULL,
+    "wilayaId" TEXT,
+    "zoneName" TEXT NOT NULL,
+    "communeNames" TEXT,
+    "notes" TEXT,
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- جدول المنتجات (Products)
@@ -173,6 +193,11 @@ ALTER TABLE "orders" ADD CONSTRAINT "orders_wholesaleId_fkey" FOREIGN KEY ("whol
 
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_productId_fkey" FOREIGN KEY ("productId") REFERENCES "products"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE "categories" ADD CONSTRAINT "categories_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "categories"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE "delivery_schedules" ADD CONSTRAINT "delivery_schedules_wholesaleId_fkey" FOREIGN KEY ("wholesaleId") REFERENCES "wholesale_profiles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "delivery_schedules" ADD CONSTRAINT "delivery_schedules_wilayaId_fkey" FOREIGN KEY ("wilayaId") REFERENCES "wilayas"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

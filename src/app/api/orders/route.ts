@@ -19,8 +19,9 @@ export async function GET(req: NextRequest) {
           ...(status ? { status: status as any } : {}),
         },
         include: {
-          retail: { select: { shopName: true, ownerName: true, phone: true, wilaya: true } },
-          items: { include: { product: { select: { nameAr: true, images: true } } } },
+          retail: { include: { wilaya: true, commune: true } },
+          wholesale: { include: { wilaya: true, commune: true } },
+          items: { include: { product: { select: { nameAr: true, nameFr: true, images: true, price: true } } } },
         },
         orderBy: { createdAt: 'desc' },
       })
@@ -35,8 +36,9 @@ export async function GET(req: NextRequest) {
           ...(status ? { status: status as any } : {}),
         },
         include: {
-          wholesale: { select: { companyName: true, phone: true } },
-          items: { include: { product: { select: { nameAr: true, images: true } } } },
+          retail: { include: { wilaya: true, commune: true } },
+          wholesale: { include: { wilaya: true, commune: true } },
+          items: { include: { product: { select: { nameAr: true, nameFr: true, images: true, price: true } } } },
         },
         orderBy: { createdAt: 'desc' },
       })
@@ -46,12 +48,12 @@ export async function GET(req: NextRequest) {
     if (session.user.role === 'ADMIN') {
       const orders = await prisma.order.findMany({
         include: {
-          retail: { select: { shopName: true } },
-          wholesale: { select: { companyName: true } },
-          items: true,
+          retail: { include: { wilaya: true, commune: true } },
+          wholesale: { include: { wilaya: true, commune: true } },
+          items: { include: { product: true } },
         },
         orderBy: { createdAt: 'desc' },
-        take: 100,
+        take: 200,
       })
       return NextResponse.json({ orders })
     }

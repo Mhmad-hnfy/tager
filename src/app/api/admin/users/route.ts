@@ -25,8 +25,28 @@ export async function GET(req: NextRequest) {
       } : {}),
     },
     include: {
-      wholesaleProfile: { include: { wilaya: true } },
-      retailProfile: { include: { wilaya: true } },
+      wholesaleProfile: {
+        include: {
+          wilaya: true,
+          commune: true,
+          deliverySchedules: {
+            include: { wilaya: true },
+            orderBy: { dayOfWeek: 'asc' },
+          },
+          _count: {
+            select: { products: true, orders: true },
+          },
+        },
+      },
+      retailProfile: {
+        include: {
+          wilaya: true,
+          commune: true,
+          _count: {
+            select: { orders: true },
+          },
+        },
+      },
     },
     orderBy: { createdAt: 'desc' },
   })

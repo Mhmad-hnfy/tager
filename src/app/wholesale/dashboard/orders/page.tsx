@@ -5,10 +5,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useSearchParams } from 'next/navigation'
 import {
   ClipboardList, Search, Filter, Check, X, Clock,
-  Package, Loader2, ChevronDown, Phone, MapPin, Eye
+  Package, Loader2, ChevronDown, Phone, MapPin, Eye, FileText, ExternalLink
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { cn, formatPrice, formatDate, getOrderStatusLabel, getOrderStatusColor, generateOrderNumber } from '@/lib/utils'
+import { InvoiceModal } from '@/components/InvoiceModal'
 
 const ORDER_STATUSES = [
   { value: '', label: 'جميع الطلبات' },
@@ -27,6 +28,7 @@ function WholesaleOrdersContent() {
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '')
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<any | null>(null)
 
   const fetchOrders = async () => {
     setLoading(true)
@@ -130,6 +132,17 @@ function WholesaleOrdersContent() {
                       {order.items?.length} منتج
                     </div>
                     <div className="font-black text-primary-700">{formatPrice(order.total)}</div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedInvoiceOrder(order)
+                      }}
+                      className="btn btn-sm bg-slate-800 text-white hover:bg-slate-900 text-xs flex items-center gap-1 shadow-2xs"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-primary-400" />
+                      <span>الفاتورة</span>
+                    </button>
                     <ChevronDown className={cn('w-4 h-4 text-slate-400 transition-transform', expandedOrder === order.id && 'rotate-180')} />
                   </div>
                   <div className="text-xs text-slate-400 mt-1">{formatDate(order.createdAt)}</div>
@@ -145,19 +158,57 @@ function WholesaleOrdersContent() {
                       className="border-t border-slate-100"
                     >
                       <div className="p-4 space-y-4">
-                        {/* Retail info */}
-                        <div className="bg-slate-50 rounded-xl p-3 flex flex-wrap gap-3 text-sm">
-                          <div className="flex items-center gap-1.5 text-slate-600">
-                            <Phone className="w-3.5 h-3.5" />
-                            <span dir="ltr">{order.retail?.phone}</span>
-                          </div>
-                          {order.retail?.wilaya && (
-                            <div className="flex items-center gap-1.5 text-slate-600">
-                              <MapPin className="w-3.5 h-3.5" />
-                              <span>{order.retail.wilaya.nameAr}</span>
+                        {/* Retail info & Google Maps */}
+                        <div className="bg-slate-50 rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm border border-slate-200/60">
+                          <div className="flex flex-wrap items-center gap-3">
+                            <span className="font-bold text-slate-900">{order.retail?.shopName}</span>
+                            <span className="text-slate-500 font-medium">({order.retail?.ownerName})</span>
+                            <div className="flex items-center gap-1.5 text-slate-600 font-semibold" dir="ltr">
+                              <Phone className="w-3.5 h-3.5 text-primary-600" />
+                              <span>{order.retail?.phone}</span>
                             </div>
-                          )}
-                          <span className="font-medium">{order.retail?.ownerName}</span>
+                            {(order.retail?.wilaya || order.retail?.commune || order.retail?.address) && (
+                              <div className="flex items-center gap-1 text-slate-600">
+                                <MapPin className="w-3.5 h-3.5 text-danger-500" />
+                                <span>
+                                  {order.retail?.wilaya?.nameAr}
+                                  {order.retail?.commune ? ` - ${order.retail.commune.nameAr}` : ''}
+                                  {order.retail?.address ? ` (${order.retail.address})` : ''}
+                                </span>
+                              </div>
+                            )}
+                            {order.retail?.zoneName && (
+                              <span className="badge bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-xs">
+                                📍 منطقة: {order.retail.zoneName}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-wrap pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200">
+                            {order.retail?.mapUrl ? (
+                              <a
+                                href={order.retail.mapUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-sm bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs"
+                              >
+                                <MapPin className="w-3.5 h-3.5" />
+                                <span>🗺️ موقع المحل (Google Maps)</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            ) : (
+                              <span className="text-xs text-slate-400">لم يحدد موقع خرائط</span>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => setSelectedInvoiceOrder(order)}
+                              className="btn btn-sm bg-primary-700 hover:bg-primary-800 text-white font-bold text-xs flex items-center gap-1.5"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>طباعة الفاتورة</span>
+                            </button>
+                          </div>
                         </div>
 
                         {/* Items */}
@@ -241,6 +292,14 @@ function WholesaleOrdersContent() {
             ))}
           </AnimatePresence>
         </div>
+      )}
+
+      {/* Invoice Modal */}
+      {selectedInvoiceOrder && (
+        <InvoiceModal
+          order={selectedInvoiceOrder}
+          onClose={() => setSelectedInvoiceOrder(null)}
+        />
       )}
     </div>
   )

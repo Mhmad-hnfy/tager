@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import {
   LayoutDashboard, Package, FolderOpen, ClipboardList,
-  User, LogOut, Bell, Menu, X, ChevronDown, Store
+  User, LogOut, Bell, Menu, X, ChevronDown, Store, Truck
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -16,6 +16,7 @@ const navItems = [
   { href: '/wholesale/dashboard', icon: LayoutDashboard, label: 'لوحة التحكم' },
   { href: '/wholesale/dashboard/products', icon: Package, label: 'المنتجات' },
   { href: '/wholesale/dashboard/categories', icon: FolderOpen, label: 'الأقسام' },
+  { href: '/wholesale/dashboard/delivery-schedule', icon: Truck, label: 'جدول التوزيع والمناطق' },
   { href: '/wholesale/dashboard/orders', icon: ClipboardList, label: 'الطلبات' },
   { href: '/wholesale/dashboard/profile', icon: User, label: 'ملفي الشخصي' },
 ]

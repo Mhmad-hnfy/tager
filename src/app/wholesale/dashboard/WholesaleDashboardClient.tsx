@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Package, ClipboardList, TrendingUp, Clock, CheckCircle, XCircle, Star, ArrowLeft, MapPin } from 'lucide-react'
+import { Package, ClipboardList, TrendingUp, Clock, CheckCircle, XCircle, Star, ArrowLeft, MapPin, Truck } from 'lucide-react'
 import { cn, formatPrice, formatDate, getOrderStatusLabel, getOrderStatusColor, generateOrderNumber } from '@/lib/utils'
 
 interface Props {
@@ -126,7 +126,7 @@ export function WholesaleDashboardClient({ profile, productCount, orderCounts, r
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="grid sm:grid-cols-3 gap-4"
+        className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4"
       >
         <Link href="/wholesale/dashboard/products" className="card-hover p-5 flex items-center gap-4 group">
           <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors">
@@ -135,6 +135,17 @@ export function WholesaleDashboardClient({ profile, productCount, orderCounts, r
           <div>
             <div className="font-semibold text-slate-800">إدارة المنتجات</div>
             <div className="text-xs text-slate-400">إضافة وتعديل المنتجات</div>
+          </div>
+          <ArrowLeft className="w-4 h-4 text-slate-300 mr-auto group-hover:text-slate-500 rtl-flip" />
+        </Link>
+
+        <Link href="/wholesale/dashboard/delivery-schedule" className="card-hover p-5 flex items-center gap-4 group">
+          <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center group-hover:bg-emerald-100 transition-colors">
+            <Truck className="w-6 h-6 text-emerald-600" />
+          </div>
+          <div>
+            <div className="font-semibold text-slate-800">جدول التوزيع</div>
+            <div className="text-xs text-slate-400">مواعيد ومناطق التوصيل</div>
           </div>
           <ArrowLeft className="w-4 h-4 text-slate-300 mr-auto group-hover:text-slate-500 rtl-flip" />
         </Link>

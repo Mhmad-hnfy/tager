@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 import {
   LayoutDashboard, Users, Package, ClipboardList,
-  FolderOpen, MapPin, Settings, LogOut, Menu, X, Shield
+  FolderOpen, MapPin, Settings, LogOut, Menu, X, Shield, Truck
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -17,6 +17,7 @@ const navItems = [
   { href: '/admin/users', icon: Users, label: 'المستخدمون' },
   { href: '/admin/products', icon: Package, label: 'المنتجات' },
   { href: '/admin/orders', icon: ClipboardList, label: 'الطلبات' },
+  { href: '/admin/delivery-schedules', icon: Truck, label: 'جداول ومناطق التوزيع' },
   { href: '/admin/categories', icon: FolderOpen, label: 'الأقسام' },
   { href: '/admin/wilayas', icon: MapPin, label: 'الولايات' },
 ]
