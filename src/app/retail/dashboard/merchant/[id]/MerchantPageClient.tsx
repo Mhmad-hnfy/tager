@@ -570,7 +570,7 @@ export function MerchantPageClient({ merchant, globalCategories, userRetailProfi
       ) : (
         <div className="product-grid">
           <AnimatePresence>
-            {filteredProducts.map((product: any, i: number) => {
+          {filteredProducts.map((product: any, i: number) => {
               const images = parseImages(product.images)
               const isAdded = addedIds.has(product.id)
               const isOutOfStock = product.quantity === 0
@@ -581,50 +581,50 @@ export function MerchantPageClient({ merchant, globalCategories, userRetailProfi
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: i * 0.03 }}
-                  className={cn('card group', isOutOfStock && 'opacity-80')}
+                  className={cn('card group overflow-hidden', isOutOfStock && 'opacity-80')}
                 >
-                  <div className="aspect-square bg-slate-100 rounded-t-2xl overflow-hidden relative">
+                  {/* Image - fixed height, compact */}
+                  <div className="h-48 bg-slate-100 rounded-t-2xl overflow-hidden relative">
                     {images[0] ? (
                       <Image src={images[0]} alt={product.nameAr} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Package className="w-10 h-10 text-slate-300" />
+                        <Package className="w-8 h-8 text-slate-300" />
                       </div>
                     )}
                     {isOutOfStock && (
-                      <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
-                        <span className="badge bg-orange-600 text-white text-xs font-bold">🔴 نفذت الكمية</span>
+                      <div className="absolute top-1.5 right-1.5">
+                        <span className="badge bg-orange-600 text-white text-xs font-bold">🔴 نفذ</span>
                       </div>
                     )}
                   </div>
-                  <div className="p-3">
-                    <h3 className="font-semibold text-slate-800 text-sm truncate mb-0.5">{product.nameAr}</h3>
+
+                  {/* Info */}
+                  <div className="p-2.5">
+                    <h3 className="font-bold text-slate-800 text-sm truncate mb-1 leading-snug">{product.nameAr}</h3>
                     {product.category && (
-                      <span className="badge bg-slate-100 text-slate-600 text-xs mb-2 flex items-center gap-1 w-fit">
+                      <span className="badge bg-slate-100 text-slate-600 text-xs mb-1.5 flex items-center gap-1 w-fit">
                         <Tag className="w-2.5 h-2.5 text-primary-600" />
                         {product.category.parent && (
-                          <span className="text-slate-400 font-medium">{product.category.parent.nameAr} ›</span>
+                          <span className="text-slate-400">{product.category.parent.nameAr} ›</span>
                         )}
                         <span className="font-semibold">{product.category.nameAr}</span>
                       </span>
                     )}
-                    {product.description && (
-                      <p className="text-xs text-slate-400 line-clamp-2 mt-1 mb-2">{product.description}</p>
-                    )}
-                    <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center justify-between mt-1.5">
                       <span className="font-black text-primary-700 text-sm">{formatPrice(product.price)}</span>
                       <span className={cn(
                         'text-xs font-semibold px-2 py-0.5 rounded-lg',
                         isOutOfStock ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600'
                       )}>
-                        {isOutOfStock ? '🔴 نفذ' : `${product.quantity} متوفر`}
+                        {isOutOfStock ? 'نفذ' : product.quantity}
                       </span>
                     </div>
                     <button
                       onClick={() => handleAddToCart(product)}
                       disabled={isOutOfStock}
                       className={cn(
-                        'w-full mt-2 btn btn-sm transition-all duration-300',
+                        'w-full mt-2 btn btn-sm text-sm font-bold transition-all duration-300',
                         isAdded
                           ? 'bg-green-500 text-white hover:bg-green-500'
                           : isOutOfStock
@@ -633,11 +633,11 @@ export function MerchantPageClient({ merchant, globalCategories, userRetailProfi
                       )}
                     >
                       {isAdded ? (
-                        <><Check className="w-3 h-3" /> تمت الإضافة</>
+                        <><Check className="w-3.5 h-3.5" /> تمت الإضافة</>
                       ) : isOutOfStock ? (
                         'نفذت الكمية'
                       ) : (
-                        <><Plus className="w-3 h-3" /> أضف للطلب</>
+                        <><Plus className="w-3.5 h-3.5" /> أضف للطلب</>
                       )}
                     </button>
                   </div>

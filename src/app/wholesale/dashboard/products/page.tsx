@@ -279,7 +279,7 @@ export default function ProductsPage() {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
           <AnimatePresence>
             {filtered.map((product, i) => {
               const images = parseImages(product.images)
@@ -291,54 +291,51 @@ export default function ProductsPage() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ delay: i * 0.03 }}
-                  className={cn('card group relative', product.isHidden && 'opacity-60')}
+                  className={cn('card group relative overflow-hidden', product.isHidden && 'opacity-60')}
                 >
-                  {/* Image */}
-                  <div className="aspect-square bg-slate-100 rounded-t-2xl overflow-hidden relative">
+                  {/* Image - height fixed, not full aspect-square */}
+                  <div className="h-48 bg-slate-100 rounded-t-2xl overflow-hidden relative">
                     {images[0] ? (
-                      <Image src={images[0]} alt={product.nameAr} fill className="object-cover" />
+                      <Image src={images[0]} alt={product.nameAr} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Package className="w-12 h-12 text-slate-300" />
+                        <Package className="w-8 h-8 text-slate-300" />
                       </div>
                     )}
                     {product.isHidden && (
                       <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center">
-                        <span className="badge bg-slate-700 text-white"><EyeOff className="w-3 h-3" /> مخفي</span>
+                        <span className="badge bg-slate-700 text-white text-xs"><EyeOff className="w-3 h-3" /> مخفي</span>
                       </div>
                     )}
-                    {/* Out of stock overlay */}
                     {isOutOfStock && !product.isHidden && (
-                      <div className="absolute inset-0 bg-orange-900/30 flex items-center justify-center">
-                        <span className="badge bg-orange-600 text-white font-bold text-xs px-3 py-1">
-                          🔴 نفذت الكمية
-                        </span>
+                      <div className="absolute top-1.5 right-1.5">
+                        <span className="badge bg-orange-600 text-white font-bold text-xs">🔴 نفذ</span>
                       </div>
                     )}
                   </div>
 
                   {/* Info */}
-                  <div className="p-3">
-                    <h3 className="font-semibold text-slate-800 text-sm truncate mb-1">{product.nameAr}</h3>
+                  <div className="p-2.5">
+                    <h3 className="font-bold text-slate-800 text-sm truncate mb-1 leading-snug">{product.nameAr}</h3>
                     {product.category && (
-                      <span className="badge bg-primary-50 text-primary-700 text-xs mb-2">{product.category.nameAr}</span>
+                      <span className="badge bg-primary-50 text-primary-700 text-xs mb-1.5">{product.category.nameAr}</span>
                     )}
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="font-black text-primary-700">{formatPrice(product.price)}</span>
+                    <div className="flex items-center justify-between mt-1.5">
+                      <span className="font-black text-primary-700 text-sm">{formatPrice(product.price)}</span>
                       <span className={cn(
                         'text-xs font-semibold px-2 py-0.5 rounded-lg',
                         isOutOfStock ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600'
                       )}>
-                        {isOutOfStock ? '🔴 نفذ' : `${product.quantity} وحدة`}
+                        {isOutOfStock ? 'نفذ' : product.quantity}
                       </span>
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="p-3 pt-0 flex gap-2">
+                  <div className="px-2.5 pb-2.5 flex gap-1.5">
                     <button
                       onClick={() => openEditModal(product)}
-                      className="btn btn-outline btn-sm flex-1"
+                      className="btn btn-outline btn-sm flex-1 text-xs"
                     >
                       <Edit className="w-3 h-3" /> تعديل
                     </button>
@@ -347,13 +344,13 @@ export default function ProductsPage() {
                       className="btn btn-ghost btn-sm px-2"
                       title={product.isHidden ? 'إظهار' : 'إخفاء'}
                     >
-                      {product.isHidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                      {product.isHidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                     </button>
                     <button
                       onClick={() => handleDelete(product.id)}
                       className="btn btn-sm px-2 text-danger-500 hover:bg-red-50"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </motion.div>

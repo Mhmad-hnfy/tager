@@ -40,8 +40,13 @@ export default function AdminCategoriesPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('حذف هذا القسم؟')) return
     const res = await fetch(`/api/categories?id=${id}`, { method: 'DELETE' })
-    if (res.ok) { toast.success('تم الحذف'); fetchCats() }
-    else toast.error('خطأ في الحذف')
+    if (res.ok) {
+      toast.success('تم الحذف ✅')
+      fetchCats()
+    } else {
+      const data = await res.json()
+      toast.error(data.error || 'خطأ في الحذف')
+    }
   }
 
   return (
