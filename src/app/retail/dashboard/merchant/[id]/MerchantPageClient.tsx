@@ -6,7 +6,8 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   MapPin, Phone, Search, Package, ShoppingCart, Plus, Check,
-  ArrowRight, Store, Truck, Calendar, CheckCircle2, AlertCircle, ChevronDown
+  ArrowRight, Store, Truck, Calendar, CheckCircle2, AlertCircle, ChevronDown,
+  Layers, FolderTree, Tag, Sparkles
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { cn, formatPrice, parseImages } from '@/lib/utils'
@@ -31,7 +32,8 @@ interface Props {
 export function MerchantPageClient({ merchant, globalCategories, userRetailProfile }: Props) {
   const { addItem, items } = useCart()
   const [search, setSearch] = useState('')
-  const [catFilter, setCatFilter] = useState('')
+  const [selectedMainCat, setSelectedMainCat] = useState<string | null>(null)
+  const [selectedSubBranch, setSelectedSubBranch] = useState<string | null>(null)
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set())
 
   // Zone matching state
@@ -86,29 +88,82 @@ export function MerchantPageClient({ merchant, globalCategories, userRetailProfi
     return `بعد ${daysUntil} أيام (${matchedSchedule.dayNameAr})`
   }, [matchedSchedule, todayDow])
 
-  const allCategories = [
-    ...merchant.categories,
-    ...globalCategories.filter((g: any) => merchant.products.some((p: any) => p.categoryId === g.id))
-  ]
-
-  // Build hierarchical categories from products
-  const productCategories = useMemo(() => {
-    const cats: any[] = []
-    const seen = new Set()
-    merchant.products.forEach((p: any) => {
-      if (p.category && !seen.has(p.category.id)) {
-        cats.push(p.category)
-        seen.add(p.category.id)
+  // All categories available in this merchant
+  const allCategories = useMemo(() => {
+    const map = new Map<string, any>()
+    ;(merchant.categories || []).forEach((c: any) => map.set(c.id, c))
+    globalCategories.forEach((g: any) => {
+      if (!map.has(g.id)) map.set(g.id, g)
+    })
+    // Also include any category from products
+    ;(merchant.products || []).forEach((p: any) => {
+      if (p.category && !map.has(p.category.id)) {
+        map.set(p.category.id, p.category)
+      }
+      if (p.category?.parent && !map.has(p.category.parent.id)) {
+        map.set(p.category.parent.id, p.category.parent)
       }
     })
-    return cats
-  }, [merchant.products])
+    return Array.from(map.values())
+  }, [merchant.categories, globalCategories, merchant.products])
 
-  const filteredProducts = merchant.products.filter((p: any) => {
-    const matchSearch = !search || p.nameAr.includes(search) || (p.nameFr || '').toLowerCase().includes(search.toLowerCase())
-    const matchCat = !catFilter || p.categoryId === catFilter
-    return matchSearch && matchCat && !p.isHidden
-  })
+  // Root (Main) Categories: where parentId is null
+  const rootCategories = useMemo(() => {
+    const roots = allCategories.filter((c: any) => !c.parentId)
+    return roots.map((rc: any) => {
+      // Find all child branches
+      const childBranchIds = new Set(allCategories.filter((c: any) => c.parentId === rc.id).map((c: any) => c.id))
+      childBranchIds.add(rc.id)
+      const count = merchant.products.filter((p: any) => !p.isHidden && p.categoryId && childBranchIds.has(p.categoryId)).length
+      return { ...rc, productCount: count }
+    })
+  }, [allCategories, merchant.products])
+
+  // Sub-branches for the selected main category
+  const currentBranches = useMemo(() => {
+    if (!selectedMainCat) return []
+    return allCategories
+      .filter((c: any) => c.parentId === selectedMainCat)
+      .map((b: any) => {
+        const count = merchant.products.filter((p: any) => !p.isHidden && p.categoryId === b.id).length
+        return { ...b, productCount: count }
+      })
+  }, [allCategories, selectedMainCat, merchant.products])
+
+  // Selected main category details
+  const activeMainCatObj = useMemo(() => {
+    if (!selectedMainCat) return null
+    return rootCategories.find((c: any) => c.id === selectedMainCat) || null
+  }, [selectedMainCat, rootCategories])
+
+  // Filtered products based on search, main category, and sub-branch
+  const filteredProducts = useMemo(() => {
+    return merchant.products.filter((p: any) => {
+      if (p.isHidden) return false
+
+      if (search) {
+        const q = search.toLowerCase()
+        const matchName = p.nameAr.toLowerCase().includes(q) || (p.nameFr && p.nameFr.toLowerCase().includes(q))
+        if (!matchName) return false
+      }
+
+      // If a specific sub-branch is selected
+      if (selectedSubBranch) {
+        return p.categoryId === selectedSubBranch
+      }
+
+      // If a main category is selected
+      if (selectedMainCat) {
+        if (p.categoryId === selectedMainCat) return true
+        if (p.category?.parentId === selectedMainCat) return true
+        const branchIds = allCategories.filter((c: any) => c.parentId === selectedMainCat).map((c: any) => c.id)
+        if (p.categoryId && branchIds.includes(p.categoryId)) return true
+        return false
+      }
+
+      return true
+    })
+  }, [merchant.products, search, selectedMainCat, selectedSubBranch, allCategories])
 
   const handleAddToCart = (product: any) => {
     if (product.quantity === 0) {
@@ -182,41 +237,44 @@ export function MerchantPageClient({ merchant, globalCategories, userRetailProfi
         )}
       </motion.div>
 
-      {/* Smart Delivery Schedule with Zone Selection */}
+      {/* Smart Delivery Schedule with Zone Selection - Centered on Mobile */}
       {activeSchedules.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="card p-4 bg-gradient-to-br from-emerald-50/80 to-teal-50/50 border border-emerald-200/60"
+          className="card p-4 sm:p-5 bg-gradient-to-br from-emerald-50/80 to-teal-50/50 border border-emerald-200/60"
         >
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
-              <Truck className="w-4 h-4" />
+          {/* Header centered on mobile */}
+          <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-right gap-2 sm:gap-3 mb-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 shadow-xs">
+              <Truck className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-emerald-950">جدول مواعيد التوزيع</h2>
+              <h2 className="text-base font-black text-emerald-950">جدول مواعيد التوزيع</h2>
               <p className="text-xs text-emerald-700">اختر منطقتك لمعرفة موعد وصول البضاعة</p>
             </div>
           </div>
 
           {/* Zone Picker */}
           <div className="mb-3">
-            <label className="text-xs font-semibold text-emerald-800 mb-1.5 block">📍 اختر منطقتك:</label>
+            <label className="text-xs font-semibold text-emerald-800 mb-1.5 block text-center sm:text-right">
+              📍 اختر منطقتك:
+            </label>
             <button
               onClick={() => setShowZonePicker(!showZonePicker)}
               className={cn(
-                'w-full flex items-center justify-between px-4 py-2.5 rounded-xl border-2 text-sm font-medium transition-all',
+                'w-full flex items-center justify-between px-4 py-2.5 rounded-xl border-2 text-sm font-medium transition-all text-center sm:text-right',
                 selectedZone
-                  ? 'border-emerald-400 bg-emerald-50 text-emerald-800'
+                  ? 'border-emerald-400 bg-emerald-50 text-emerald-800 shadow-xs'
                   : 'border-dashed border-emerald-300 bg-white text-emerald-600 hover:border-emerald-400'
               )}
             >
-              <span>
+              <span className="flex-1 text-center sm:text-right">
                 {selectedZone
                   ? `📍 ${activeSchedules.find((s: any) => s.id === selectedZone)?.zoneName}`
                   : 'اضغط هنا لاختيار منطقتك'}
               </span>
-              <ChevronDown className={cn('w-4 h-4 transition-transform', showZonePicker && 'rotate-180')} />
+              <ChevronDown className={cn('w-4 h-4 transition-transform flex-shrink-0', showZonePicker && 'rotate-180')} />
             </button>
 
             <AnimatePresence>
@@ -232,7 +290,7 @@ export function MerchantPageClient({ merchant, globalCategories, userRetailProfi
                       <div className="relative">
                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <input
-                          className="w-full pr-8 pl-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-emerald-300"
+                          className="w-full pr-8 pl-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-emerald-300 text-center sm:text-right"
                           placeholder="ابحث عن منطقتك..."
                           value={zoneQuery}
                           onChange={e => setZoneQuery(e.target.value)}
@@ -279,7 +337,7 @@ export function MerchantPageClient({ merchant, globalCategories, userRetailProfi
             </AnimatePresence>
           </div>
 
-          {/* Delivery Day Result */}
+          {/* Delivery Day Result - Centered on Mobile */}
           <AnimatePresence>
             {matchedSchedule && (
               <motion.div
@@ -288,26 +346,26 @@ export function MerchantPageClient({ merchant, globalCategories, userRetailProfi
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="bg-white rounded-xl border-2 border-emerald-300 p-4 shadow-sm"
               >
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-right gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center flex-shrink-0 mx-auto sm:mx-0">
                     <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 w-full">
                     <p className="text-xs text-emerald-700 font-medium mb-1">موعد التوصيل لمنطقتك:</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="bg-emerald-600 text-white font-bold px-3 py-1 rounded-lg text-sm flex items-center gap-1.5">
+                    <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                      <span className="bg-emerald-600 text-white font-bold px-3 py-1 rounded-lg text-sm flex items-center gap-1.5 shadow-xs">
                         <Calendar className="w-3.5 h-3.5" />
                         يوم {matchedSchedule.dayNameAr}
                       </span>
                       <span className="text-sm font-semibold text-slate-700">{nextDeliveryDay}</span>
                     </div>
                     {matchedSchedule.notes && (
-                      <p className="text-xs text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg mt-2 border border-amber-100">
+                      <p className="text-xs text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg mt-2 border border-amber-100 text-center sm:text-right">
                         ⏰ {matchedSchedule.notes}
                       </p>
                     )}
                     {matchedSchedule.communeNames && (
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-slate-500 mt-1 text-center sm:text-right">
                         المناطق: {matchedSchedule.communeNames}
                       </p>
                     )}
@@ -317,30 +375,30 @@ export function MerchantPageClient({ merchant, globalCategories, userRetailProfi
             )}
           </AnimatePresence>
 
-          {/* All zones summary */}
+          {/* All zones summary - Centered cards on mobile */}
           {!selectedZone && (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-1">
               {activeSchedules.map((s: any) => (
                 <button
                   key={s.id}
                   onClick={() => setSelectedZone(s.id)}
-                  className="bg-white p-2.5 rounded-xl border border-emerald-100 shadow-2xs text-right hover:border-emerald-300 hover:bg-emerald-50/50 transition-all"
+                  className="bg-white p-3 rounded-xl border border-emerald-100 shadow-2xs text-center sm:text-right hover:border-emerald-300 hover:bg-emerald-50/50 transition-all"
                 >
-                  <div className="flex items-center justify-between gap-1 mb-1">
+                  <div className="flex items-center justify-center sm:justify-between gap-1 mb-1">
                     <span className="font-bold text-xs text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md flex items-center gap-1">
                       <Calendar className="w-3 h-3 text-emerald-600" />
                       {s.dayNameAr}
                     </span>
                     {s.wilaya && (
-                      <span className="text-[11px] text-slate-500">{s.wilaya.nameAr}</span>
+                      <span className="text-[11px] text-slate-500 hidden sm:inline">{s.wilaya.nameAr}</span>
                     )}
                   </div>
-                  <div className="font-bold text-sm text-slate-800 flex items-center gap-1">
+                  <div className="font-bold text-sm text-slate-800 flex items-center justify-center sm:justify-start gap-1">
                     <MapPin className="w-3.5 h-3.5 text-danger-500 flex-shrink-0" />
                     {s.zoneName}
                   </div>
                   {s.communeNames && (
-                    <p className="text-[11px] text-slate-500 mt-0.5 truncate">{s.communeNames}</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5 truncate text-center sm:text-right">{s.communeNames}</p>
                   )}
                 </button>
               ))}
@@ -349,44 +407,159 @@ export function MerchantPageClient({ merchant, globalCategories, userRetailProfi
         </motion.div>
       )}
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            className="form-input pr-9"
-            placeholder="ابحث عن منتج..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <input
+          className="form-input pr-10"
+          placeholder="ابحث عن أي منتج أو سلعة..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
       </div>
 
-      {/* Category Tabs */}
-      {allCategories.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          <button
-            onClick={() => setCatFilter('')}
-            className={cn('badge cursor-pointer whitespace-nowrap transition-all px-4 py-2',
-              !catFilter ? 'bg-primary-700 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            )}
-          >
-            الكل
-          </button>
-          {allCategories.map((cat: any) => (
+      {/* Hierarchical Categories & Sub-branches Selector */}
+      <div className="space-y-3">
+        {/* LEVEL 1: Main Categories (الأقسام / المنتجات الرئيسية) */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-black text-slate-700 flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-primary-600" />
+              المنتجات والأقسام الرئيسية:
+            </span>
+            <span className="text-[11px] text-slate-400">
+              {filteredProducts.length} منتج متاح
+            </span>
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto pb-1.5 no-scrollbar">
+            {/* All Products Tab */}
             <button
-              key={cat.id}
-              onClick={() => setCatFilter(cat.id === catFilter ? '' : cat.id)}
-              className={cn('badge cursor-pointer whitespace-nowrap transition-all px-4 py-2',
-                catFilter === cat.id ? 'bg-primary-700 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              onClick={() => {
+                setSelectedMainCat(null)
+                setSelectedSubBranch(null)
+              }}
+              className={cn(
+                'cursor-pointer whitespace-nowrap transition-all px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 flex-shrink-0 shadow-2xs',
+                !selectedMainCat
+                  ? 'bg-primary-700 text-white shadow-sm ring-2 ring-primary-700/20'
+                  : 'bg-white border border-slate-200 text-slate-700 hover:border-primary-300 hover:bg-slate-50'
               )}
             >
-              {cat.icon && <span className="ml-1">{cat.icon}</span>}
-              {cat.nameAr}
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>جميع المنتجات</span>
+              <span className={cn(
+                'px-1.5 py-0.2 rounded-full text-[10px] font-bold',
+                !selectedMainCat ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+              )}>
+                {merchant.products.filter((p: any) => !p.isHidden).length}
+              </span>
             </button>
-          ))}
+
+            {/* Main Categories Pills */}
+            {rootCategories.map((cat: any) => {
+              const isSelected = selectedMainCat === cat.id
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => {
+                    if (isSelected) {
+                      setSelectedMainCat(null)
+                      setSelectedSubBranch(null)
+                    } else {
+                      setSelectedMainCat(cat.id)
+                      setSelectedSubBranch(null)
+                    }
+                  }}
+                  className={cn(
+                    'cursor-pointer whitespace-nowrap transition-all px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 flex-shrink-0 shadow-2xs',
+                    isSelected
+                      ? 'bg-primary-700 text-white shadow-sm ring-2 ring-primary-700/20'
+                      : 'bg-white border border-slate-200 text-slate-700 hover:border-primary-300 hover:bg-slate-50'
+                  )}
+                >
+                  {cat.icon ? <span>{cat.icon}</span> : <Package className="w-3.5 h-3.5 text-primary-500" />}
+                  <span>{cat.nameAr}</span>
+                  {cat.productCount > 0 && (
+                    <span className={cn(
+                      'px-1.5 py-0.2 rounded-full text-[10px] font-bold',
+                      isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                    )}>
+                      {cat.productCount}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
         </div>
-      )}
+
+        {/* LEVEL 2: Sub-branches under selected Main Category (فروع القسم الرئيسي) */}
+        <AnimatePresence>
+          {selectedMainCat && currentBranches.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: -5 }}
+              animate={{ opacity: 1, height: 'auto', y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -5 }}
+              className="bg-gradient-to-r from-primary-50/80 to-blue-50/60 border border-primary-100/90 rounded-2xl p-3.5 shadow-2xs"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <FolderTree className="w-4 h-4 text-primary-700" />
+                <span className="text-xs font-black text-primary-900">
+                  فروع ومنتجات قسم ({activeMainCatObj?.nameAr}):
+                </span>
+                <span className="text-[11px] text-primary-700 bg-primary-100/70 px-2 py-0.5 rounded-full font-bold">
+                  {currentBranches.length} فرع
+                </span>
+              </div>
+
+              <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                {/* All branches of this main category */}
+                <button
+                  onClick={() => setSelectedSubBranch(null)}
+                  className={cn(
+                    'cursor-pointer whitespace-nowrap transition-all px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 flex-shrink-0',
+                    !selectedSubBranch
+                      ? 'bg-primary-800 text-white shadow-xs'
+                      : 'bg-white text-slate-700 border border-primary-200/80 hover:bg-primary-100/50'
+                  )}
+                >
+                  <span>الكل في هذا القسم</span>
+                  <span className="text-[10px] opacity-80">({activeMainCatObj?.productCount || 0})</span>
+                </button>
+
+                {/* Sub-branches list */}
+                {currentBranches.map((branch: any) => {
+                  const isBranchActive = selectedSubBranch === branch.id
+                  return (
+                    <button
+                      key={branch.id}
+                      onClick={() => setSelectedSubBranch(isBranchActive ? null : branch.id)}
+                      className={cn(
+                        'cursor-pointer whitespace-nowrap transition-all px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 flex-shrink-0',
+                        isBranchActive
+                          ? 'bg-primary-800 text-white shadow-xs'
+                          : 'bg-white text-slate-700 border border-primary-200/80 hover:bg-primary-100/50'
+                      )}
+                    >
+                      <Tag className="w-3 h-3 text-primary-600" />
+                      <span>{branch.nameAr}</span>
+                      {branch.productCount > 0 && (
+                        <span className={cn(
+                          'px-1.5 py-0.2 rounded-full text-[10px] font-bold',
+                          isBranchActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+                        )}>
+                          {branch.productCount}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Products Grid */}
       {filteredProducts.length === 0 ? (
@@ -427,7 +600,13 @@ export function MerchantPageClient({ merchant, globalCategories, userRetailProfi
                   <div className="p-3">
                     <h3 className="font-semibold text-slate-800 text-sm truncate mb-0.5">{product.nameAr}</h3>
                     {product.category && (
-                      <span className="badge bg-slate-100 text-slate-500 text-xs mb-2">{product.category.nameAr}</span>
+                      <span className="badge bg-slate-100 text-slate-600 text-xs mb-2 flex items-center gap-1 w-fit">
+                        <Tag className="w-2.5 h-2.5 text-primary-600" />
+                        {product.category.parent && (
+                          <span className="text-slate-400 font-medium">{product.category.parent.nameAr} ›</span>
+                        )}
+                        <span className="font-semibold">{product.category.nameAr}</span>
+                      </span>
                     )}
                     {product.description && (
                       <p className="text-xs text-slate-400 line-clamp-2 mt-1 mb-2">{product.description}</p>

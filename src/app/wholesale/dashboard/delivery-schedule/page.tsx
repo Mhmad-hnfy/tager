@@ -190,10 +190,10 @@ export default function DeliverySchedulePage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="page-header flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="page-header flex-col sm:flex-row sm:items-center justify-between gap-4 text-center sm:text-right">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2">
+            <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center text-primary-700 flex-shrink-0">
               <Truck className="w-5 h-5" />
             </div>
             <div>
@@ -205,7 +205,7 @@ export default function DeliverySchedulePage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center sm:justify-end gap-2">
           <button onClick={fetchSchedules} className="btn btn-ghost btn-sm">
             <RefreshCw className="w-4 h-4" />
             تحديث
@@ -328,8 +328,8 @@ export default function DeliverySchedulePage() {
                   </div>
 
                   {/* Zone Name & Wilaya */}
-                  <div className="mb-3">
-                    <h3 className="text-base sm:text-lg font-black text-slate-800 flex items-center gap-1.5">
+                  <div className="mb-3 text-center sm:text-right">
+                    <h3 className="text-base sm:text-lg font-black text-slate-800 flex items-center justify-center sm:justify-start gap-1.5">
                       <MapPin className="w-4 h-4 text-danger-600 flex-shrink-0" />
                       {item.zoneName}
                     </h3>

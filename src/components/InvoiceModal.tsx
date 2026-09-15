@@ -472,33 +472,6 @@ export function InvoiceModal({ order, onClose }: InvoiceModalProps) {
               </div>
             </div>
 
-            {/* Official Delivery Signatures */}
-            <div className="grid grid-cols-2 gap-6 pt-4 border-t-2 border-slate-200 text-center" dir="rtl">
-              <div className="p-3 border border-slate-200 rounded-xl bg-slate-50/40 text-right sm:text-center">
-                <div className="text-xs font-bold text-slate-700 mb-1">
-                  ختم وتوقيع تاجر الجملة (الموزع)
-                </div>
-                <div className="h-16 flex items-center justify-center text-xs text-slate-300">
-                  (مكان الختم والتوقيع)
-                </div>
-                <div className="text-[10px] text-slate-400 border-t border-slate-100 pt-1 font-mono text-center">
-                  تاريخ التسليم: __ / __ / 202_
-                </div>
-              </div>
-
-              <div className="p-3 border border-slate-200 rounded-xl bg-slate-50/40 text-right sm:text-center">
-                <div className="text-xs font-bold text-slate-700 mb-1">
-                  ختم وتوقيع تاجر التجزئة (المستلم)
-                </div>
-                <div className="h-16 flex items-center justify-center text-xs text-slate-300">
-                  (أقر باستلام البضاعة كاملة وسليمة)
-                </div>
-                <div className="text-[10px] text-slate-400 border-t border-slate-100 pt-1 font-mono text-center">
-                  اسم وتوقيع المستلم: ________________
-                </div>
-              </div>
-            </div>
-
             {/* Micro Footer Note */}
             <div className="mt-6 text-center text-[10px] text-slate-400" dir="rtl">
               تم إصدار هذه الفاتورة رسمياً عبر منصة تجارنا (Tujaruna B2B Platform) · رقم الطلب: {orderNumber}

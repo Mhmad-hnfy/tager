@@ -151,7 +151,7 @@ export default function HomePage() {
             transition={{ delay: 0.8 }}
             className="flex items-center justify-center gap-6 text-white/70 text-sm"
           >
-            <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-300" /> مجاني</span>
+            {/* <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-300" /> مجاني</span> */}
             <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-300" /> سهل الاستخدام</span>
             <span className="flex items-center gap-2"><CheckCircle className="w-4 h-4 text-green-300" /> آمن</span>
           </motion.div>

@@ -22,6 +22,8 @@ const retailSchema = z.object({
   phone: z.string().min(9),
   email: z.string().email().optional().or(z.literal('')),
   password: z.string().min(6),
+  wilaya: z.string().optional(),
+  wilayaName: z.string().optional(),
   wilayaId: z.string().optional(),
   communeId: z.string().optional(),
   address: z.string().optional(),
@@ -82,6 +84,41 @@ export async function POST(req: NextRequest) {
       const parsed = retailSchema.safeParse(data)
       if (!parsed.success) return NextResponse.json({ error: 'البيانات غير صحيحة' }, { status: 400 })
 
+      // Match or resolve typed wilaya
+      let matchedWilayaId: string | null = data.wilayaId || null
+      const typedWilaya = (data.wilaya || data.wilayaName || '').trim()
+
+      if (!matchedWilayaId && typedWilaya) {
+        const cleanedWilaya = typedWilaya.replace(/^ولاية\s+/i, '').trim()
+        const found = await prisma.wilaya.findFirst({
+          where: {
+            OR: [
+              { nameAr: { contains: cleanedWilaya, mode: 'insensitive' } },
+              { nameFr: { contains: cleanedWilaya, mode: 'insensitive' } },
+              { code: cleanedWilaya },
+            ]
+          }
+        })
+
+        if (found) {
+          matchedWilayaId = found.id
+        } else {
+          try {
+            const randomCode = 'W' + Math.floor(1000 + Math.random() * 9000)
+            const created = await prisma.wilaya.create({
+              data: {
+                nameAr: cleanedWilaya,
+                nameFr: cleanedWilaya,
+                code: randomCode,
+              }
+            })
+            matchedWilayaId = created.id
+          } catch (e) {
+            console.error('Auto-create wilaya error:', e)
+          }
+        }
+      }
+
       const user = await prisma.user.create({
         data: {
           phone: data.phone,
@@ -93,9 +130,9 @@ export async function POST(req: NextRequest) {
               shopName: data.shopName,
               ownerName: data.ownerName,
               phone: data.phone,
-              wilayaId: data.wilayaId || null,
-              communeId: data.communeId || null,
-              address: data.address || null,
+              wilayaId: matchedWilayaId,
+              communeId: null,
+              address: null,
               description: data.description || null,
               mapUrl: data.mapUrl || null,
               zoneName: data.zoneName || null,

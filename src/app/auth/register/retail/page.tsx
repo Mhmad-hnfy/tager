@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -12,17 +12,12 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-interface Wilaya { id: string; nameAr: string; code: string }
-interface Commune { id: string; nameAr: string }
-
 export default function RetailRegisterPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [detectingLocation, setDetectingLocation] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [wilayas, setWilayas] = useState<Wilaya[]>([])
-  const [communes, setCommunes] = useState<Commune[]>([])
   const [step, setStep] = useState(1) // Step 1: account info, Step 2: location
 
   const [form, setForm] = useState({
@@ -32,25 +27,10 @@ export default function RetailRegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    wilayaId: '',
-    communeId: '',
+    wilaya: '',
     zoneName: '',
-    address: '',
     mapUrl: '',
   })
-
-  useEffect(() => {
-    fetch('/api/wilayas').then(r => r.json()).then(d => setWilayas(d.wilayas || []))
-  }, [])
-
-  useEffect(() => {
-    if (form.wilayaId) {
-      setCommunes([])
-      setForm(f => ({ ...f, communeId: '' }))
-      fetch(`/api/wilayas?wilayaId=${form.wilayaId}`)
-        .then(r => r.json()).then(d => setCommunes(d.communes || []))
-    }
-  }, [form.wilayaId])
 
   const update = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }))
 
@@ -301,40 +281,18 @@ export default function RetailRegisterPage() {
           {/* STEP 2: Location & Zone */}
           {step === 2 && (
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Wilaya & Commune */}
-              <div className="space-y-3 bg-slate-50/80 p-4 rounded-2xl border border-slate-200/70">
-                <div className="flex items-center gap-2 mb-1">
-                  <MapPin className="w-4 h-4 text-danger-600" />
-                  <span className="font-bold text-slate-700 text-sm">الولاية والبلدية</span>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <div className="form-group mb-0">
-                    <label className="form-label text-xs">الولاية</label>
-                    <select
-                      className="form-input appearance-none"
-                      value={form.wilayaId}
-                      onChange={e => update('wilayaId', e.target.value)}
-                    >
-                      <option value="">-- اختر الولاية --</option>
-                      {wilayas.map(w => (
-                        <option key={w.id} value={w.id}>{w.code} - {w.nameAr}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group mb-0">
-                    <label className="form-label text-xs">البلدية</label>
-                    <select
-                      className="form-input appearance-none"
-                      value={form.communeId}
-                      onChange={e => update('communeId', e.target.value)}
-                      disabled={!form.wilayaId || communes.length === 0}
-                    >
-                      <option value="">-- اختر البلدية --</option>
-                      {communes.map(c => (
-                        <option key={c.id} value={c.id}>{c.nameAr}</option>
-                      ))}
-                    </select>
-                  </div>
+              {/* Wilaya Input - Required Text */}
+              <div className="form-group">
+                <label className="form-label font-bold text-slate-700">الولاية *</label>
+                <div className="relative">
+                  <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    className="form-input pr-9"
+                    placeholder="اكتب اسم ولايتك (مثال: الجزائر، وهران، سطيف...)"
+                    value={form.wilaya}
+                    onChange={e => update('wilaya', e.target.value)}
+                    required
+                  />
                 </div>
               </div>
 
@@ -356,17 +314,6 @@ export default function RetailRegisterPage() {
                 <p className="text-xs text-emerald-700 mt-1.5">
                   📍 سيعرض لك نظام جدول تاجر الجملة اليوم الذي سيأتيك فيه بناءً على منطقتك
                 </p>
-              </div>
-
-              {/* Address */}
-              <div className="form-group">
-                <label className="form-label">العنوان التفصيلي</label>
-                <input
-                  className="form-input"
-                  placeholder="الحي، الشارع، رقم المحل..."
-                  value={form.address}
-                  onChange={e => update('address', e.target.value)}
-                />
               </div>
 
               {/* Google Maps Location */}

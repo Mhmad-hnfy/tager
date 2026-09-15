@@ -11,7 +11,10 @@ export default async function MerchantPage({ params }: { params: { id: string } 
         wilaya: true,
         commune: true,
         user: { select: { status: true } },
-        categories: { where: { isGlobal: false } },
+        categories: {
+          where: { isGlobal: false },
+          include: { parent: true, children: true },
+        },
         deliverySchedules: {
           where: { isActive: true },
           include: { wilaya: true },
@@ -19,7 +22,11 @@ export default async function MerchantPage({ params }: { params: { id: string } 
         },
         products: {
           where: { isHidden: false },
-          include: { category: true },
+          include: {
+            category: {
+              include: { parent: true }
+            }
+          },
           orderBy: { createdAt: 'desc' },
         },
       },
@@ -37,7 +44,10 @@ export default async function MerchantPage({ params }: { params: { id: string } 
     })
   }
 
-  const globalCategories = await prisma.category.findMany({ where: { isGlobal: true } })
+  const globalCategories = await prisma.category.findMany({
+    where: { isGlobal: true },
+    include: { children: true },
+  })
 
   return (
     <MerchantPageClient
