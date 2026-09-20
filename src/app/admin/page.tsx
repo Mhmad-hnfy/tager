@@ -1,29 +1,42 @@
-import { prisma } from '@/lib/prisma'
+﻿import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import Link from 'next/link'
-import { Users, Package, ClipboardList, Store, ShoppingBag, TrendingUp } from 'lucide-react'
+import { Users, Package, ClipboardList, Store, ShoppingBag, TrendingUp, WifiOff, RefreshCw } from 'lucide-react'
 
 export default async function AdminPage() {
   const session = await auth()
   if (!session?.user || session.user.role !== 'ADMIN') redirect('/')
 
-  const [wholesaleCount, retailCount, productCount, orderCount, newOrderCount] = await Promise.all([
-    prisma.wholesaleProfile.count(),
-    prisma.retailProfile.count(),
-    prisma.product.count(),
-    prisma.order.count(),
-    prisma.order.count({ where: { status: 'NEW' } }),
-  ])
+  let wholesaleCount = 0
+  let retailCount = 0
+  let productCount = 0
+  let orderCount = 0
+  let newOrderCount = 0
+  let recentOrders: any[] = []
+  let dbError = false
 
-  const recentOrders = await prisma.order.findMany({
-    include: {
-      retail: { select: { shopName: true } },
-      wholesale: { select: { companyName: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 8,
-  })
+  try {
+    ;[wholesaleCount, retailCount, productCount, orderCount, newOrderCount] = await Promise.all([
+      prisma.wholesaleProfile.count(),
+      prisma.retailProfile.count(),
+      prisma.product.count(),
+      prisma.order.count(),
+      prisma.order.count({ where: { status: 'NEW' } }),
+    ])
+
+    recentOrders = await prisma.order.findMany({
+      include: {
+        retail: { select: { shopName: true } },
+        wholesale: { select: { companyName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 8,
+    })
+  } catch (err) {
+    console.error('[AdminPage] DB error:', err)
+    dbError = true
+  }
 
   const stats = [
     { label: 'تجار الجملة', value: wholesaleCount, icon: Store, color: 'text-primary-700', bg: 'bg-primary-50', href: '/admin/users?role=WHOLESALE' },
@@ -39,6 +52,22 @@ export default async function AdminPage() {
         <h1 className="section-title">لوحة التحكم الرئيسية</h1>
         <p className="section-subtitle">نظرة عامة على المنصة</p>
       </div>
+
+      {dbError && (
+        <div className="flex items-start gap-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+          <WifiOff className="w-5 h-5 mt-0.5 flex-shrink-0" />
+          <div className="flex-1">
+            <div className="font-semibold text-sm">تعذّر الاتصال بقاعدة البيانات</div>
+            <div className="text-xs text-red-600 mt-0.5">
+              تأكد أن مشروع Supabase شغال ولم يتوقف. البيانات الموضحة أدناه قد لا تكون محدّثة.
+            </div>
+          </div>
+          <a href="/admin" className="flex items-center gap-1.5 text-xs font-medium hover:underline mt-0.5">
+            <RefreshCw className="w-3.5 h-3.5" />
+            إعادة المحاولة
+          </a>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {stats.map((stat, i) => (
@@ -60,40 +89,46 @@ export default async function AdminPage() {
           <Link href="/admin/orders" className="text-primary-700 text-sm font-semibold hover:underline">عرض الكل</Link>
         </div>
         <div className="table-container">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>رقم الطلب</th>
-                <th>تاجر التجزئة</th>
-                <th>تاجر الجملة</th>
-                <th>الحالة</th>
-                <th>التاريخ</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentOrders.map(order => (
-                <tr key={order.id}>
-                  <td className="font-bold">#{order.id.slice(-6).toUpperCase()}</td>
-                  <td>{order.retail.shopName}</td>
-                  <td>{order.wholesale.companyName}</td>
-                  <td>
-                    <span className={`badge text-xs ${
-                      order.status === 'NEW' ? 'bg-blue-100 text-blue-700' :
-                      order.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-                      order.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {{
-                        NEW: 'جديد', PROCESSING: 'معالجة', ACCEPTED: 'مقبول',
-                        REJECTED: 'مرفوض', READY: 'جاهز', COMPLETED: 'مكتمل'
-                      }[order.status]}
-                    </span>
-                  </td>
-                  <td className="text-slate-400">{new Date(order.createdAt).toLocaleDateString('ar-DZ')}</td>
+          {recentOrders.length === 0 ? (
+            <div className="p-8 text-center text-slate-400 text-sm">
+              {dbError ? 'لا يمكن تحميل الطلبات حالياً' : 'لا توجد طلبات بعد'}
+            </div>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>رقم الطلب</th>
+                  <th>تاجر التجزئة</th>
+                  <th>تاجر الجملة</th>
+                  <th>الحالة</th>
+                  <th>التاريخ</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recentOrders.map(order => (
+                  <tr key={order.id}>
+                    <td className="font-bold">#{order.id.slice(-6).toUpperCase()}</td>
+                    <td>{order.retail.shopName}</td>
+                    <td>{order.wholesale.companyName}</td>
+                    <td>
+                      <span className={`badge text-xs ${
+                        order.status === 'NEW' ? 'bg-blue-100 text-blue-700' :
+                        order.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                        order.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                        'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {{
+                          NEW: 'جديد', PROCESSING: 'معالجة', ACCEPTED: 'مقبول',
+                          REJECTED: 'مرفوض', READY: 'جاهز', COMPLETED: 'مكتمل'
+                        }[order.status as string]}
+                      </span>
+                    </td>
+                    <td className="text-slate-400">{new Date(order.createdAt).toLocaleDateString('ar-DZ')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
