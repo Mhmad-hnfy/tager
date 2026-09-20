@@ -35,6 +35,7 @@ export function MerchantPageClient({ merchant, globalCategories, userRetailProfi
   const [selectedMainCat, setSelectedMainCat] = useState<string | null>(null)
   const [selectedSubBranch, setSelectedSubBranch] = useState<string | null>(null)
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set())
+  const [quantities, setQuantities] = useState<Record<string, number>>({})
 
   // Zone matching state
   const [selectedZone, setSelectedZone] = useState<string | null>(null)
@@ -165,23 +166,31 @@ export function MerchantPageClient({ merchant, globalCategories, userRetailProfi
     })
   }, [merchant.products, search, selectedMainCat, selectedSubBranch, allCategories])
 
+  const getQty = (productId: string) => quantities[productId] ?? 1
+  const setQty = (productId: string, qty: number, max: number) => {
+    setQuantities(prev => ({ ...prev, [productId]: Math.max(1, Math.min(qty, max || 999)) }))
+  }
+
   const handleAddToCart = (product: any) => {
     if (product.quantity === 0) {
       toast.error('نفذت الكمية من هذا المنتج')
       return
     }
-    addItem({
-      productId: product.id,
-      nameAr: product.nameAr,
-      price: product.price,
-      quantity: 1,
-      maxQty: product.quantity || 999,
-      image: parseImages(product.images)[0],
-      wholesaleId: merchant.id,
-      wholesaleName: merchant.companyName,
-    })
+    const qty = getQty(product.id)
+    for (let i = 0; i < qty; i++) {
+      addItem({
+        productId: product.id,
+        nameAr: product.nameAr,
+        price: product.price,
+        quantity: 1,
+        maxQty: product.quantity || 999,
+        image: parseImages(product.images)[0],
+        wholesaleId: merchant.id,
+        wholesaleName: merchant.companyName,
+      })
+    }
     setAddedIds(prev => new Set(prev).add(product.id))
-    toast.success(`تمت الإضافة: ${product.nameAr}`)
+    toast.success(`تمت الإضافة: ${product.nameAr} (${qty} ${qty === 1 ? 'وحدة' : 'وحدات'})`)
     setTimeout(() => {
       setAddedIds(prev => {
         const next = new Set(prev)
@@ -620,6 +629,24 @@ export function MerchantPageClient({ merchant, globalCategories, userRetailProfi
                         {isOutOfStock ? 'نفذ' : product.quantity}
                       </span>
                     </div>
+
+                    {/* Quantity Picker */}
+                    {!isOutOfStock && (
+                      <div className="flex items-center justify-between mt-2 bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setQty(product.id, getQty(product.id) - 1, product.quantity || 999)}
+                          className="w-9 h-9 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors font-bold text-lg"
+                        >−</button>
+                        <span className="flex-1 text-center font-bold text-slate-800 text-sm">{getQty(product.id)}</span>
+                        <button
+                          type="button"
+                          onClick={() => setQty(product.id, getQty(product.id) + 1, product.quantity || 999)}
+                          className="w-9 h-9 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors font-bold text-lg"
+                        >+</button>
+                      </div>
+                    )}
+
                     <button
                       onClick={() => handleAddToCart(product)}
                       disabled={isOutOfStock}

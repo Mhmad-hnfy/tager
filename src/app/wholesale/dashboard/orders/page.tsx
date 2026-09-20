@@ -118,34 +118,39 @@ function WholesaleOrdersContent() {
               >
                 {/* Order Header */}
                 <div
-                  className="p-4 cursor-pointer hover:bg-slate-50/50 transition-colors"
+                  className="p-3 sm:p-4 cursor-pointer hover:bg-slate-50/50 transition-colors"
                   onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
                 >
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="font-bold text-slate-800">{generateOrderNumber(order.id)}</span>
-                    <span className={cn('badge', getOrderStatusColor(order.status))}>
-                      {getOrderStatusLabel(order.status)}
-                    </span>
-                    <div className="text-sm text-slate-500 flex-1">
-                      <span className="font-medium text-slate-700">{order.retail?.shopName}</span>
-                      {' · '}
-                      {order.items?.length} منتج
+                  <div className="flex items-start sm:items-center gap-2 sm:gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <span className="font-bold text-slate-800 text-sm">{generateOrderNumber(order.id)}</span>
+                        <span className={cn('badge text-xs', getOrderStatusColor(order.status))}>
+                          {getOrderStatusLabel(order.status)}
+                        </span>
+                      </div>
+                      <div className="text-sm text-slate-600 truncate">
+                        <span className="font-medium text-slate-700">{order.retail?.shopName}</span>
+                        <span className="text-slate-400"> · {order.items?.length} منتج</span>
+                      </div>
+                      <div className="text-xs text-slate-400 mt-0.5">{formatDate(order.createdAt)}</div>
                     </div>
-                    <div className="font-black text-primary-700">{formatPrice(order.total)}</div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setSelectedInvoiceOrder(order)
-                      }}
-                      className="btn btn-sm bg-slate-800 text-white hover:bg-slate-900 text-xs flex items-center gap-1 shadow-2xs"
-                    >
-                      <FileText className="w-3.5 h-3.5 text-primary-400" />
-                      <span>الفاتورة</span>
-                    </button>
-                    <ChevronDown className={cn('w-4 h-4 text-slate-400 transition-transform', expandedOrder === order.id && 'rotate-180')} />
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="font-black text-primary-700 text-sm">{formatPrice(order.total)}</div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedInvoiceOrder(order)
+                        }}
+                        className="btn btn-sm bg-slate-800 text-white hover:bg-slate-900 text-xs flex items-center gap-1 shadow-2xs"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-primary-400" />
+                        <span className="hidden sm:inline">الفاتورة</span>
+                      </button>
+                      <ChevronDown className={cn('w-4 h-4 text-slate-400 transition-transform flex-shrink-0', expandedOrder === order.id && 'rotate-180')} />
+                    </div>
                   </div>
-                  <div className="text-xs text-slate-400 mt-1">{formatDate(order.createdAt)}</div>
                 </div>
 
                 {/* Expanded Details */}

@@ -68,6 +68,11 @@ export default function RetailRegisterPage() {
       setError('كلمة المرور يجب أن تكون 6 أحرف على الأقل')
       return
     }
+    const phoneClean = form.phone.replace(/\s/g, '')
+    if (!/^(05|06|07)\d{8}$/.test(phoneClean)) {
+      setError('رقم الهاتف يجب أن يبدأ بـ 05 أو 06 أو 07 ويتكون من 10 أرقام')
+      return
+    }
     setStep(2)
   }
 
@@ -191,6 +196,8 @@ export default function RetailRegisterPage() {
                       required
                       dir="ltr"
                       type="tel"
+                      pattern="(05|06|07)[0-9]{8}"
+                      title="رقم الهاتف يجب أن يبدأ بـ 05 أو 06 أو 07"
                     />
                   </div>
                 </div>
