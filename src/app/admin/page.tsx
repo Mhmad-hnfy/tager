@@ -1,4 +1,4 @@
-﻿import { prisma } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import Link from 'next/link'
@@ -47,89 +47,120 @@ export default async function AdminPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
         <h1 className="section-title">لوحة التحكم الرئيسية</h1>
         <p className="section-subtitle">نظرة عامة على المنصة</p>
       </div>
 
       {dbError && (
-        <div className="flex items-start gap-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+        <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
           <WifiOff className="w-5 h-5 mt-0.5 flex-shrink-0" />
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="font-semibold text-sm">تعذّر الاتصال بقاعدة البيانات</div>
             <div className="text-xs text-red-600 mt-0.5">
-              تأكد أن مشروع Supabase شغال ولم يتوقف. البيانات الموضحة أدناه قد لا تكون محدّثة.
+              تأكد أن مشروع Supabase شغال ولم يتوقف.
             </div>
           </div>
-          <a href="/admin" className="flex items-center gap-1.5 text-xs font-medium hover:underline mt-0.5">
+          <a href="/admin" className="flex items-center gap-1.5 text-xs font-medium hover:underline flex-shrink-0">
             <RefreshCw className="w-3.5 h-3.5" />
             إعادة المحاولة
           </a>
         </div>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* Stats Grid - 2 cols on mobile, 5 on large */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {stats.map((stat, i) => (
           <Link key={i} href={stat.href} className="stat-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300">
             <div className={`stat-icon ${stat.bg}`}>
-              <stat.icon className={`w-6 h-6 ${stat.color}`} />
+              <stat.icon className={`w-5 h-5 sm:w-6 sm:h-6 ${stat.color}`} />
             </div>
             <div>
-              <div className={`text-2xl font-black ${stat.color}`}>{stat.value}</div>
+              <div className={`text-xl sm:text-2xl font-black ${stat.color}`}>{stat.value}</div>
               <div className="text-slate-500 text-xs">{stat.label}</div>
             </div>
           </Link>
         ))}
       </div>
 
+      {/* Recent Orders */}
       <div className="card">
-        <div className="p-5 border-b border-slate-50 flex items-center justify-between">
-          <h2 className="font-bold text-slate-800">آخر الطلبات</h2>
-          <Link href="/admin/orders" className="text-primary-700 text-sm font-semibold hover:underline">عرض الكل</Link>
+        <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+          <h2 className="font-bold text-slate-800 text-sm sm:text-base">آخر الطلبات</h2>
+          <Link href="/admin/orders" className="text-primary-700 text-xs sm:text-sm font-semibold hover:underline">عرض الكل</Link>
         </div>
-        <div className="table-container">
-          {recentOrders.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 text-sm">
-              {dbError ? 'لا يمكن تحميل الطلبات حالياً' : 'لا توجد طلبات بعد'}
+
+        {recentOrders.length === 0 ? (
+          <div className="p-8 text-center text-slate-400 text-sm">
+            {dbError ? 'لا يمكن تحميل الطلبات حالياً' : 'لا توجد طلبات بعد'}
+          </div>
+        ) : (
+          <>
+            {/* Mobile: Card list */}
+            <div className="sm:hidden divide-y divide-slate-50">
+              {recentOrders.map(order => (
+                <div key={order.id} className="p-4 flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold text-slate-800 text-sm">#{order.id.slice(-6).toUpperCase()}</div>
+                    <div className="text-xs text-slate-500 mt-0.5 truncate">{order.retail.shopName}</div>
+                    <div className="text-xs text-slate-400 truncate">{order.wholesale.companyName}</div>
+                    <div className="text-xs text-slate-400 mt-1">{new Date(order.createdAt).toLocaleDateString('ar-DZ')}</div>
+                  </div>
+                  <span className={`badge text-xs flex-shrink-0 ${
+                    order.status === 'NEW' ? 'bg-blue-100 text-blue-700' :
+                    order.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                    order.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                    'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {{
+                      NEW: 'جديد', PROCESSING: 'معالجة', ACCEPTED: 'مقبول',
+                      REJECTED: 'مرفوض', READY: 'جاهز', COMPLETED: 'مكتمل'
+                    }[order.status as string]}
+                  </span>
+                </div>
+              ))}
             </div>
-          ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>رقم الطلب</th>
-                  <th>تاجر التجزئة</th>
-                  <th>تاجر الجملة</th>
-                  <th>الحالة</th>
-                  <th>التاريخ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentOrders.map(order => (
-                  <tr key={order.id}>
-                    <td className="font-bold">#{order.id.slice(-6).toUpperCase()}</td>
-                    <td>{order.retail.shopName}</td>
-                    <td>{order.wholesale.companyName}</td>
-                    <td>
-                      <span className={`badge text-xs ${
-                        order.status === 'NEW' ? 'bg-blue-100 text-blue-700' :
-                        order.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-                        order.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
-                        'bg-yellow-100 text-yellow-700'
-                      }`}>
-                        {{
-                          NEW: 'جديد', PROCESSING: 'معالجة', ACCEPTED: 'مقبول',
-                          REJECTED: 'مرفوض', READY: 'جاهز', COMPLETED: 'مكتمل'
-                        }[order.status as string]}
-                      </span>
-                    </td>
-                    <td className="text-slate-400">{new Date(order.createdAt).toLocaleDateString('ar-DZ')}</td>
+
+            {/* Desktop: Full table */}
+            <div className="hidden sm:block table-container">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>رقم الطلب</th>
+                    <th>تاجر التجزئة</th>
+                    <th>تاجر الجملة</th>
+                    <th>الحالة</th>
+                    <th>التاريخ</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                </thead>
+                <tbody>
+                  {recentOrders.map(order => (
+                    <tr key={order.id}>
+                      <td className="font-bold">#{order.id.slice(-6).toUpperCase()}</td>
+                      <td>{order.retail.shopName}</td>
+                      <td>{order.wholesale.companyName}</td>
+                      <td>
+                        <span className={`badge text-xs ${
+                          order.status === 'NEW' ? 'bg-blue-100 text-blue-700' :
+                          order.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                          order.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                          'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {{
+                            NEW: 'جديد', PROCESSING: 'معالجة', ACCEPTED: 'مقبول',
+                            REJECTED: 'مرفوض', READY: 'جاهز', COMPLETED: 'مكتمل'
+                          }[order.status as string]}
+                        </span>
+                      </td>
+                      <td className="text-slate-400">{new Date(order.createdAt).toLocaleDateString('ar-DZ')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

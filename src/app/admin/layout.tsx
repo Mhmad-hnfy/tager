@@ -1,12 +1,12 @@
-﻿'use client'
+'use client'
 
+import { useRef, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
 import {
   LayoutDashboard, Users, Package, ClipboardList,
-  FolderOpen, MapPin, LogOut, Menu, X, Shield, Truck
+  FolderOpen, MapPin, LogOut, Shield, Truck
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -23,22 +23,25 @@ const navItems = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { data: session } = useSession()
-  const [open, setOpen] = useState(false)
-
-  useEffect(() => { setOpen(false) }, [pathname])
-
-  useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [open])
+  const activeTabRef = useRef<HTMLAnchorElement>(null)
 
   const isActive = (item: any) =>
     item.exact ? pathname === item.href : pathname.startsWith(item.href)
 
-  const NavLinks = ({ onClose }: { onClose?: () => void }) => (
+  useEffect(() => {
+    if (activeTabRef.current) {
+      activeTabRef.current.scrollIntoView({
+        behavior: 'smooth',
+        inline: 'center',
+        block: 'nearest',
+      })
+    }
+  }, [pathname])
+
+  const NavLinks = () => (
     <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
       {navItems.map(item => (
-        <Link key={item.href} href={item.href} onClick={onClose}
+        <Link key={item.href} href={item.href}
           className={cn(
             'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all',
             isActive(item) ? 'bg-primary-600 text-white' : 'text-slate-400 hover:bg-slate-700 hover:text-white'
@@ -50,77 +53,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </nav>
   )
 
-  const SignOutBtn = () => (
-    <div className="p-3 border-t border-slate-700 flex-shrink-0">
-      <button onClick={() => signOut({ callbackUrl: '/' })}
-        className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:bg-red-900/30 hover:text-red-400 w-full transition-all">
-        <LogOut className="w-5 h-5" />
-        تسجيل الخروج
-      </button>
-    </div>
-  )
-
   return (
     <>
-      {/* ======= Mobile Overlay - خارج كل containers ======= */}
-      <div
-        onClick={() => setOpen(false)}
-        className="md:hidden"
-        style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.75)',
-          zIndex: 99998,
-          display: open ? 'block' : 'none',
-        }}
-      />
-
-      {/* ======= Mobile Drawer - خارج كل containers ======= */}
-      <aside
-        className="md:hidden flex flex-col bg-slate-800"
-        style={{
-          position: 'fixed',
-          top: 0,
-          right: 0,
-          bottom: 0,
-          width: 'min(288px, 85vw)',
-          zIndex: 99999,
-          transform: open ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 0.28s ease-in-out',
-        }}
-      >
-        {/* Drawer header */}
-        <div className="flex items-center justify-between px-4 py-4 border-b border-slate-700 flex-shrink-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 bg-primary-600 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Shield className="w-4 h-4 text-white" />
-            </div>
-            <div className="min-w-0">
-              <div className="font-black text-white text-sm leading-tight">تجارنا</div>
-              <div className="text-xs text-slate-400">لوحة الإدارة</div>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            className="flex-shrink-0 p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* User */}
-        <div className="px-4 py-3 border-b border-slate-700/50 flex-shrink-0">
-          <div className="text-xs text-slate-400">المدير</div>
-          <div className="text-sm font-semibold text-white truncate">{session?.user?.phone}</div>
-        </div>
-
-        <NavLinks onClose={() => setOpen(false)} />
-        <SignOutBtn />
-      </aside>
-
       {/* ======= Main Layout ======= */}
       <div className="min-h-screen bg-slate-900 flex">
+
         {/* Desktop Sidebar */}
         <aside className="hidden md:flex flex-col w-64 bg-slate-800 fixed top-0 right-0 bottom-0 z-30 border-l border-slate-700">
           <div className="p-5 border-b border-slate-700">
@@ -139,28 +76,46 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="text-sm font-semibold text-white truncate">{session?.user?.phone}</div>
           </div>
           <NavLinks />
-          <SignOutBtn />
+          <div className="p-3 border-t border-slate-700 flex-shrink-0">
+            <button onClick={() => signOut({ callbackUrl: '/' })}
+              className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:bg-red-900/30 hover:text-red-400 w-full transition-all">
+              <LogOut className="w-5 h-5" />
+              تسجيل الخروج
+            </button>
+          </div>
         </aside>
 
-        {/* Content */}
+        {/* Content Area */}
         <div className="flex-1 md:mr-64 flex flex-col min-h-screen">
-          <header className="bg-slate-800 border-b border-slate-700 h-16 flex items-center justify-between px-4 sm:px-6 gap-4 sticky top-0 z-20">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setOpen(true)}
-                className="md:hidden p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700 transition-colors"
-                aria-label="فتح القائمة"
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-              <span className="text-slate-300 text-sm font-medium">لوحة إدارة تجارنا</span>
+
+          {/* Mobile Top Header */}
+          <header className="md:hidden bg-slate-800 border-b border-slate-700 h-14 flex items-center justify-between px-4 sticky top-0 z-20">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-primary-600 rounded-lg flex items-center justify-center">
+                <Shield className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-white font-bold text-sm">لوحة الإدارة</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-slate-400 text-xs hidden sm:block">{session?.user?.phone}</span>
+              <span className="text-slate-400 text-xs">{session?.user?.phone}</span>
               <button
                 onClick={() => signOut({ callbackUrl: '/' })}
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:bg-red-900/30 hover:text-red-400 transition-all border border-slate-700"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-900/30 transition-colors"
+                aria-label="تسجيل الخروج"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          </header>
+
+          {/* Desktop Top Header */}
+          <header className="hidden md:flex bg-slate-800 border-b border-slate-700 h-16 items-center justify-between px-6 gap-4 sticky top-0 z-20">
+            <span className="text-slate-300 text-sm font-medium">لوحة إدارة تجارنا</span>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 text-xs">{session?.user?.phone}</span>
+              <button
+                onClick={() => signOut({ callbackUrl: '/' })}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:bg-red-900/30 hover:text-red-400 transition-all border border-slate-700"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 خروج
@@ -168,11 +123,74 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           </header>
 
-          <main className="flex-1 p-4 sm:p-6 bg-slate-50">
+          {/* Main Content - extra bottom padding on mobile for bottom nav */}
+          <main className="flex-1 p-3 sm:p-4 md:p-6 bg-slate-50 pb-24 md:pb-6">
             {children}
           </main>
         </div>
       </div>
+
+      {/* ======= Mobile Bottom Navigation Bar (Same as Desktop Sidebar) ======= */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="flex items-center h-16 px-1">
+          {/* Scrollable Nav Items - 100% Identical to Sidebar */}
+          <div className="flex flex-1 items-center overflow-x-auto no-scrollbar scroll-smooth gap-1 py-1 h-full">
+            {navItems.map((item) => {
+              const active = isActive(item)
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  ref={active ? activeTabRef : undefined}
+                  className={cn(
+                    'flex flex-col items-center justify-center gap-0.5 px-2.5 py-1 min-w-[68px] flex-shrink-0 transition-all relative rounded-xl h-full select-none',
+                    active ? 'text-primary-600 font-bold' : 'text-slate-400 hover:text-slate-600'
+                  )}
+                >
+                  {/* Active indicator line at top */}
+                  {active && (
+                    <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary-600 rounded-b-full shadow-sm" />
+                  )}
+                  <div
+                    className={cn(
+                      'p-1.5 rounded-xl transition-colors',
+                      active ? 'bg-primary-50 text-primary-600' : 'text-slate-400'
+                    )}
+                  >
+                    <item.icon className={cn('w-5 h-5', active && 'stroke-[2.5]')} />
+                  </div>
+                  <span
+                    className={cn(
+                      'text-[10px] whitespace-nowrap leading-tight text-center',
+                      active ? 'text-primary-700 font-bold' : 'text-slate-500 font-medium'
+                    )}
+                  >
+                    {item.label}
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+
+          {/* Divider */}
+          <div className="w-px h-8 bg-slate-200 flex-shrink-0 mx-1" />
+
+          {/* Logout button */}
+          <button
+            onClick={() => signOut({ callbackUrl: '/' })}
+            className="flex flex-col items-center justify-center gap-0.5 px-3 min-w-0 flex-shrink-0 text-red-400 hover:text-red-500 transition-colors h-full"
+            aria-label="تسجيل الخروج"
+          >
+            <div className="p-1.5 rounded-xl transition-colors hover:bg-red-50">
+              <LogOut className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-medium whitespace-nowrap">خروج</span>
+          </button>
+        </div>
+      </nav>
     </>
   )
 }

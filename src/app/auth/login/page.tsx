@@ -87,7 +87,7 @@ export default function LoginPage() {
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
                   className="form-input pr-10"
-                  placeholder="0555 123 456 أو admin@tujaruna.dz"
+                  placeholder="0555 123 456"
                   required
                   dir="ltr"
                 />
