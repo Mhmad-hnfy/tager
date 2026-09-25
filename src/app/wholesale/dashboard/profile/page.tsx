@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   User, Phone, Mail, MapPin, Building2,
-  Save, Loader2, FileText, Edit2, Lock, Eye, EyeOff, CheckCircle, X
+  Save, Loader2, FileText, Edit2, Lock, Eye, EyeOff, CheckCircle, X, Camera
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
@@ -32,6 +32,39 @@ export default function WholesaleProfilePage() {
     address: '',
     description: '',
   })
+
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const logoInputRef = useRef<HTMLInputElement>(null)
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingLogo(true)
+    try {
+      const formData = new FormData()
+      formData.append('files', file)
+      const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'خطأ في رفع الشعار')
+        return
+      }
+      if (data.paths?.[0]) {
+        const logoUrl = data.paths[0]
+        await fetch('/api/profile/wholesale', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ logo: logoUrl }),
+        })
+        setProfile((prev: any) => ({ ...prev, logo: logoUrl }))
+        toast.success('تم تحديث شعار المتجر بنجاح 🎉')
+      }
+    } catch {
+      toast.error('حدث خطأ أثناء رفع الشعار')
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
 
   // Password change form
   const [pwForm, setPwForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
@@ -154,14 +187,27 @@ export default function WholesaleProfilePage() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card p-6">
         {/* Logo/Avatar */}
         <div className="flex items-center gap-4 mb-6 pb-6 border-b border-slate-100">
-          <div className="relative">
-            <div className="w-20 h-20 bg-primary-50 rounded-2xl flex items-center justify-center overflow-hidden">
-              {profile?.logo ? (
-                <Image src={profile.logo} alt="logo" width={80} height={80} className="object-cover w-full h-full" />
+          <div className="relative group cursor-pointer" onClick={() => logoInputRef.current?.click()} title="اضغط لتغيير الشعار">
+            <div className="w-20 h-20 bg-primary-50 rounded-2xl flex items-center justify-center overflow-hidden border-2 border-slate-200 group-hover:border-primary-500 transition-colors shadow-2xs">
+              {uploadingLogo ? (
+                <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
+              ) : profile?.logo ? (
+                <Image src={profile.logo} alt="logo" width={80} height={80} unoptimized className="object-cover w-full h-full" />
               ) : (
                 <Building2 className="w-10 h-10 text-primary-600" />
               )}
             </div>
+            <div className="absolute inset-0 bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-2xs font-bold gap-0.5">
+              <Camera className="w-4 h-4" />
+              <span>تغيير</span>
+            </div>
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleLogoUpload}
+            />
           </div>
           <div>
             <h2 className="text-xl font-black text-slate-800">{profile?.companyName}</h2>

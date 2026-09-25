@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ClipboardList, ChevronDown, Package, Loader2, FileText } from 'lucide-react'
+import { ClipboardList, ChevronDown, Package, Loader2, FileText, Truck, Phone } from 'lucide-react'
 import { cn, formatPrice, formatDate, getOrderStatusLabel, getOrderStatusColor, generateOrderNumber } from '@/lib/utils'
 import { InvoiceModal } from '@/components/InvoiceModal'
 
@@ -38,48 +38,75 @@ export default function RetailOrdersPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {orders.map((order, i) => (
-            <motion.div
-              key={order.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="card overflow-hidden"
-            >
-              <div
-                className="p-4 cursor-pointer hover:bg-slate-50/50"
-                onClick={() => setExpanded(expanded === order.id ? null : order.id)}
+          {orders.map((order, i) => {
+            const isOutForDelivery = order.status === 'OUT_FOR_DELIVERY'
+            const hasReminder = order.notes && order.notes.includes('تذكير وصول')
+
+            return (
+              <motion.div
+                key={order.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className={cn(
+                  'card overflow-hidden transition-all',
+                  isOutForDelivery && 'border-2 border-amber-400 ring-2 ring-amber-100 shadow-md'
+                )}
               >
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold text-slate-800">{generateOrderNumber(order.id)}</span>
-                      <span className={cn('badge', getOrderStatusColor(order.status))}>
-                        {getOrderStatusLabel(order.status)}
-                      </span>
+                {/* Out for delivery banner */}
+                {(isOutForDelivery || hasReminder) && order.status !== 'COMPLETED' && (
+                  <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2.5 flex items-center justify-between gap-3 text-xs sm:text-sm font-bold shadow-2xs">
+                    <div className="flex items-center gap-2">
+                      <Truck className="w-4 h-4 animate-bounce" />
+                      <span>🚚 تاجر الجملة في الطريق إليك (الوصول خلال ساعة تقريباً)!</span>
                     </div>
-                    <p className="text-sm text-slate-500">
-                      {order.wholesale?.companyName} · {order.items?.length} منتج
-                    </p>
+                    {order.wholesale?.phone && (
+                      <a
+                        href={`tel:${order.wholesale.phone}`}
+                        onClick={e => e.stopPropagation()}
+                        className="btn btn-xs bg-white text-amber-900 hover:bg-amber-50 font-bold py-1 px-2.5 rounded-lg flex items-center gap-1 shadow-2xs"
+                      >
+                        <Phone className="w-3 h-3" />
+                        <span>اتصال بالتاجر</span>
+                      </a>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-primary-700">{formatPrice(order.total)}</span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setSelectedInvoiceOrder(order)
-                      }}
-                      className="btn btn-sm bg-slate-800 text-white hover:bg-slate-900 text-xs flex items-center gap-1 shadow-2xs"
-                    >
-                      <FileText className="w-3.5 h-3.5 text-primary-400" />
-                      <span>الفاتورة</span>
-                    </button>
-                    <ChevronDown className={cn('w-4 h-4 text-slate-400 transition-transform', expanded === order.id && 'rotate-180')} />
+                )}
+
+                <div
+                  className="p-4 cursor-pointer hover:bg-slate-50/50"
+                  onClick={() => setExpanded(expanded === order.id ? null : order.id)}
+                >
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-slate-800">{generateOrderNumber(order.id)}</span>
+                        <span className={cn('badge', getOrderStatusColor(order.status))}>
+                          {getOrderStatusLabel(order.status)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-500">
+                        {order.wholesale?.companyName} · {order.items?.length} منتج
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-primary-700">{formatPrice(order.total)}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedInvoiceOrder(order)
+                        }}
+                        className="btn btn-sm bg-slate-800 text-white hover:bg-slate-900 text-xs flex items-center gap-1 shadow-2xs"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-primary-400" />
+                        <span>الفاتورة</span>
+                      </button>
+                      <ChevronDown className={cn('w-4 h-4 text-slate-400 transition-transform', expanded === order.id && 'rotate-180')} />
+                    </div>
                   </div>
+                  <p className="text-xs text-slate-400 mt-1">{formatDate(order.createdAt)}</p>
                 </div>
-                <p className="text-xs text-slate-400 mt-1">{formatDate(order.createdAt)}</p>
-              </div>
 
               <AnimatePresence>
                 {expanded === order.id && (
@@ -135,8 +162,9 @@ export default function RetailOrdersPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </motion.div>
-          ))}
+              </motion.div>
+            )
+          })}
         </div>
       )}
 

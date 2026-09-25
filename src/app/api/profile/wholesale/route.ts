@@ -19,7 +19,7 @@ export async function PUT(req: NextRequest) {
   if (!session?.user) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 })
 
   const body = await req.json()
-  const { companyName, ownerName, phone, wilayaId, communeId, address, description } = body
+  const { companyName, ownerName, phone, wilayaId, communeId, address, description, logo, mapUrl } = body
 
   const profile = await prisma.wholesaleProfile.update({
     where: { userId: session.user.id },
@@ -31,6 +31,8 @@ export async function PUT(req: NextRequest) {
       communeId: communeId || null,
       address,
       description,
+      ...(logo !== undefined ? { logo } : {}),
+      ...(mapUrl !== undefined ? { mapUrl } : {}),
     },
   })
 

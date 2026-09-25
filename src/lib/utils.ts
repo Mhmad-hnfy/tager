@@ -36,9 +36,10 @@ export function getOrderStatusLabel(status: string): string {
     NEW: 'طلب جديد',
     PROCESSING: 'قيد المعالجة',
     ACCEPTED: 'تم القبول',
-    REJECTED: 'تم الرفض',
-    READY: 'جاهز',
+    READY: 'جاهز للاستلام',
+    OUT_FOR_DELIVERY: 'في الطريق للتسليم (الوصول قريباً)',
     COMPLETED: 'مكتمل',
+    REJECTED: 'تم الرفض',
   }
   return labels[status] || status
 }
@@ -47,20 +48,28 @@ export function getOrderStatusColor(status: string): string {
   const colors: Record<string, string> = {
     NEW: 'bg-blue-100 text-blue-700',
     PROCESSING: 'bg-yellow-100 text-yellow-700',
-    ACCEPTED: 'bg-green-100 text-green-700',
-    REJECTED: 'bg-red-100 text-red-700',
+    ACCEPTED: 'bg-emerald-100 text-emerald-700',
     READY: 'bg-purple-100 text-purple-700',
+    OUT_FOR_DELIVERY: 'bg-amber-100 text-amber-800 border border-amber-300',
     COMPLETED: 'bg-gray-100 text-gray-700',
+    REJECTED: 'bg-red-100 text-red-700',
   }
   return colors[status] || 'bg-gray-100 text-gray-700'
 }
 
-export function parseImages(images: string): string[] {
-  try {
-    return JSON.parse(images) as string[]
-  } catch {
-    return []
+export function parseImages(images: any): string[] {
+  if (!images) return []
+  if (Array.isArray(images)) return images
+  if (typeof images === 'string') {
+    try {
+      const parsed = JSON.parse(images)
+      if (Array.isArray(parsed)) return parsed
+      return [parsed]
+    } catch {
+      return [images]
+    }
   }
+  return []
 }
 
 export function generateOrderNumber(id: string): string {

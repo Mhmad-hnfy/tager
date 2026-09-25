@@ -64,7 +64,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const body = await req.json()
     const { status } = body
 
-    const validStatuses = ['NEW', 'PROCESSING', 'ACCEPTED', 'REJECTED', 'READY', 'COMPLETED']
+    const validStatuses = ['NEW', 'PROCESSING', 'ACCEPTED', 'REJECTED', 'READY', 'OUT_FOR_DELIVERY', 'COMPLETED']
     if (!validStatuses.includes(status)) {
       return NextResponse.json({ error: 'حالة غير صحيحة' }, { status: 400 })
     }
@@ -95,16 +95,21 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       ACCEPTED: 'تم القبول',
       REJECTED: 'تم الرفض',
       READY: 'جاهز للاستلام',
+      OUT_FOR_DELIVERY: 'في الطريق للتسليم (الوصول خلال ساعة)',
       COMPLETED: 'مكتمل',
     }
 
     if (order.retail?.user?.id && statusLabels[status]) {
+      const isDelivery = status === 'OUT_FOR_DELIVERY'
       await prisma.notification.create({
         data: {
           userId: order.retail.user.id,
-          titleAr: 'تحديث حالة الطلب',
-          messageAr: `طلبك من ${order.wholesale.companyName} أصبح: ${statusLabels[status]}`,
-          type: 'ORDER_STATUS_CHANGED',
+          titleAr: isDelivery ? '🚚 تاجر الجملة في الطريق إليك!' : 'تحديث حالة الطلب',
+          titleFr: isDelivery ? 'Le grossiste est en route!' : 'Mise à jour de la commande',
+          messageAr: isDelivery
+            ? `تنبيه: تاجر الجملة (${order.wholesale.companyName}) في طريقه إليك لتسليم طلبك، ومن المتوقع وصوله خلال ساعة تقريباً. يرجى التواجد والاستعداد.`
+            : `طلبك من ${order.wholesale.companyName} أصبح: ${statusLabels[status]}`,
+          type: isDelivery ? 'DELIVERY_REMINDER' : 'ORDER_STATUS_CHANGED',
           link: '/retail/dashboard/orders',
         }
       })

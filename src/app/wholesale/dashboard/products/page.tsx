@@ -296,7 +296,7 @@ export default function ProductsPage() {
                   {/* Image - height fixed, not full aspect-square */}
                   <div className="h-48 bg-slate-100 rounded-t-2xl overflow-hidden relative">
                     {images[0] ? (
-                      <Image src={images[0]} alt={product.nameAr} fill className="object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <Image src={images[0]} alt={product.nameAr} fill unoptimized className="object-cover group-hover:scale-105 transition-transform duration-300" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Package className="w-8 h-8 text-slate-300" />
@@ -425,7 +425,7 @@ export default function ProductsPage() {
                       <div className="flex gap-2 mt-3 flex-wrap">
                         {form.images.map((img, i) => (
                           <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-slate-200 group/img">
-                            <Image src={img} alt="" fill className="object-cover" />
+                            <Image src={img} alt="" fill unoptimized className="object-cover" />
                             <button
                               type="button"
                               onClick={() => setForm(f => ({ ...f, images: f.images.filter((_, j) => j !== i) }))}

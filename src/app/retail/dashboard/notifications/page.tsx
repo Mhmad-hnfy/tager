@@ -55,33 +55,69 @@ export default function RetailNotificationsPage() {
         </div>
       ) : (
         <div className="card divide-y divide-slate-50">
-          {notifications.map((notif, i) => (
-            <motion.div
-              key={notif.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.04 }}
-              className={cn('p-4 flex items-start gap-3', !notif.isRead && 'bg-red-50/30')}
-            >
-              <div className={cn(
-                'w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5',
-                notif.type === 'ORDER_STATUS_CHANGED' ? 'bg-primary-100' : 'bg-orange-100'
-              )}>
-                <Bell className={cn(
-                  'w-4 h-4',
-                  notif.type === 'ORDER_STATUS_CHANGED' ? 'text-primary-600' : 'text-orange-600'
-                )} />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-slate-800 text-sm">{notif.titleAr}</p>
-                <p className="text-slate-600 text-sm mt-0.5">{notif.messageAr}</p>
-                <p className="text-xs text-slate-400 mt-1">{formatDate(notif.createdAt)}</p>
-              </div>
-              {!notif.isRead && (
-                <div className="w-2 h-2 bg-danger-500 rounded-full mt-2 flex-shrink-0" />
-              )}
-            </motion.div>
-          ))}
+          {notifications.map((notif, i) => {
+            const isDeliveryReminder = notif.type === 'DELIVERY_REMINDER'
+            return (
+                <motion.div
+                  key={notif.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.04 }}
+                  className={cn(
+                    'p-4 flex items-start gap-3 transition-colors',
+                    isDeliveryReminder
+                      ? 'bg-amber-50/70 border-r-4 border-amber-500'
+                      : !notif.isRead
+                        ? 'bg-red-50/30'
+                        : ''
+                  )}
+                >
+                  <div className={cn(
+                    'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5',
+                    isDeliveryReminder
+                      ? 'bg-amber-100 text-amber-700 shadow-xs'
+                      : notif.type === 'ORDER_STATUS_CHANGED'
+                        ? 'bg-primary-100 text-primary-600'
+                        : 'bg-orange-100 text-orange-600'
+                  )}>
+                    {isDeliveryReminder ? (
+                      <span className="text-lg">🚚</span>
+                    ) : (
+                      <Bell className="w-4 h-4" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                      <p className={cn('font-bold text-sm', isDeliveryReminder ? 'text-amber-950' : 'text-slate-800')}>
+                        {notif.titleAr}
+                      </p>
+                      {isDeliveryReminder && (
+                        <span className="badge bg-amber-200 text-amber-900 border border-amber-300 text-2xs font-extrabold">
+                          تنبيه وصول
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-slate-700 text-sm mt-0.5 whitespace-pre-line leading-relaxed">
+                      {notif.messageAr}
+                    </p>
+                    <div className="flex items-center justify-between gap-2 mt-2">
+                      <p className="text-xs text-slate-400">{formatDate(notif.createdAt)}</p>
+                      {notif.link && (
+                        <a
+                          href={notif.link}
+                          className="btn btn-sm bg-primary-700 hover:bg-primary-800 text-white font-bold text-xs py-1 px-3 rounded-lg shadow-2xs"
+                        >
+                          متابعة الطلبية 📦
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  {!notif.isRead && (
+                    <div className="w-2.5 h-2.5 bg-danger-500 rounded-full mt-2 flex-shrink-0 animate-pulse" />
+                  )}
+                </motion.div>
+              )
+          })}
         </div>
       )}
     </div>
