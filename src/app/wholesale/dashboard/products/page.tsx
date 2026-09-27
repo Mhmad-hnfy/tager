@@ -40,6 +40,8 @@ export default function ProductsPage() {
   const [filterAvailability, setFilterAvailability] = useState<'all' | 'available' | 'out'>('all')
   const [showModal, setShowModal] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null)
+  const [deletingProduct, setDeletingProduct] = useState(false)
   const [uploadingImages, setUploadingImages] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -166,11 +168,23 @@ export default function ProductsPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('هل أنت متأكد من حذف هذا المنتج؟')) return
-    const res = await fetch(`/api/products/${id}`, { method: 'DELETE' })
-    if (res.ok) { toast.success('تم حذف المنتج'); fetchProducts() }
-    else toast.error('خطأ في الحذف')
+  const handleConfirmDeleteProduct = async () => {
+    if (!productToDelete) return
+    setDeletingProduct(true)
+    try {
+      const res = await fetch(`/api/products/${productToDelete.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.success('تم حذف المنتج بنجاح ✅')
+        setProductToDelete(null)
+        fetchProducts()
+      } else {
+        toast.error('تعذر حذف المنتج')
+      }
+    } catch {
+      toast.error('حدث خطأ في الاتصال')
+    } finally {
+      setDeletingProduct(false)
+    }
   }
 
   const handleToggleHide = async (product: Product) => {
@@ -347,8 +361,9 @@ export default function ProductsPage() {
                       {product.isHidden ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                     </button>
                     <button
-                      onClick={() => handleDelete(product.id)}
+                      onClick={() => setProductToDelete(product)}
                       className="btn btn-sm px-2 text-danger-500 hover:bg-red-50"
+                      title="حذف المنتج"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -363,26 +378,19 @@ export default function ProductsPage() {
       {/* Add/Edit Modal */}
       <AnimatePresence>
         {showModal && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowModal(false)}
-              className="fixed inset-0 bg-black/50 z-50"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            >
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-                <div className="p-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white rounded-t-2xl z-10">
-                  <h2 className="font-bold text-slate-800">
+          <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs">
+            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-auto text-right overflow-hidden border border-slate-100"
+              >
+                <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
+                  <h2 className="font-bold text-slate-800 text-base sm:text-lg">
                     {editingProduct ? 'تعديل المنتج' : 'إضافة منتج جديد'}
                   </h2>
-                  <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-100 rounded-lg">
+                  <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
@@ -545,14 +553,67 @@ export default function ProductsPage() {
                   </div>
 
                   {/* Submit */}
-                  <button type="submit" disabled={saving} className="btn btn-primary w-full">
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                    {saving ? 'جاري الحفظ...' : editingProduct ? 'حفظ التعديلات' : 'إضافة المنتج'}
-                  </button>
+                  <div className="flex gap-2.5 pt-3 border-t border-slate-100">
+                    <button type="submit" disabled={saving} className="btn btn-primary flex-1 py-2.5 text-xs sm:text-sm">
+                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                      {saving ? 'جاري الحفظ...' : editingProduct ? 'حفظ التعديلات' : 'إضافة المنتج'}
+                    </button>
+                    <button type="button" onClick={() => setShowModal(false)} className="btn btn-ghost text-xs sm:text-sm">
+                      إلغاء
+                    </button>
+                  </div>
                 </form>
-              </div>
-            </motion.div>
-          </>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Responsive Custom Delete Confirmation Modal */}
+      <AnimatePresence>
+        {productToDelete && (
+          <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs">
+            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="w-full max-w-md bg-white rounded-2xl p-5 sm:p-6 text-right shadow-2xl border-2 border-red-200 my-auto overflow-hidden"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center text-danger-600 mb-4 mx-auto">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+
+                <h3 className="text-lg font-black text-slate-900 text-center mb-2">
+                  تأكيد حذف المنتج
+                </h3>
+
+                <p className="text-xs sm:text-sm text-slate-600 text-center mb-4">
+                  هل أنت متأكد من حذف المنتج{' '}
+                  <span className="font-bold text-slate-800">"{productToDelete.nameAr}"</span>؟
+                  لا يمكن التراجع عن هذا الإجراء.
+                </p>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleConfirmDeleteProduct}
+                    disabled={deletingProduct}
+                    className="btn btn-sm sm:btn-md bg-danger-600 hover:bg-danger-700 text-white font-bold flex-1 shadow-danger"
+                  >
+                    {deletingProduct ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    <span>{deletingProduct ? 'جاري الحذف...' : 'نعم، احذف المنتج'}</span>
+                  </button>
+                  <button
+                    onClick={() => setProductToDelete(null)}
+                    disabled={deletingProduct}
+                    className="btn btn-sm sm:btn-md btn-ghost"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </div>
         )}
       </AnimatePresence>
     </div>

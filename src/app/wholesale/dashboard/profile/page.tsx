@@ -357,32 +357,29 @@ export default function WholesaleProfilePage() {
       {/* Change Password Modal */}
       <AnimatePresence>
         {showPasswordModal && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setShowPasswordModal(false)}
-              className="fixed inset-0 bg-black/50 z-50"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
-            >
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-                <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+          <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs">
+            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-md my-auto text-right overflow-hidden border border-slate-100"
+              >
+                <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center">
                       <Lock className="w-4 h-4 text-primary-600" />
                     </div>
                     <h3 className="font-bold text-slate-800">تغيير كلمة المرور</h3>
                   </div>
-                  <button onClick={() => setShowPasswordModal(false)} className="p-2 hover:bg-slate-100 rounded-lg">
+                  <button onClick={() => setShowPasswordModal(false)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <form onSubmit={handleChangePassword} className="p-5 space-y-4">
+                <form onSubmit={handleChangePassword} className="p-4 sm:p-5 space-y-4">
                   {/* Current Password */}
                   <div className="form-group">
-                    <label className="form-label">كلمة المرور الحالية *</label>
+                    <label className="form-label text-xs sm:text-sm">كلمة المرور الحالية *</label>
                     <div className="relative">
                       <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input
@@ -401,7 +398,7 @@ export default function WholesaleProfilePage() {
 
                   {/* New Password */}
                   <div className="form-group">
-                    <label className="form-label">كلمة المرور الجديدة *</label>
+                    <label className="form-label text-xs sm:text-sm">كلمة المرور الجديدة *</label>
                     <div className="relative">
                       <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input
@@ -422,7 +419,7 @@ export default function WholesaleProfilePage() {
 
                   {/* Confirm Password */}
                   <div className="form-group">
-                    <label className="form-label">تأكيد كلمة المرور الجديدة *</label>
+                    <label className="form-label text-xs sm:text-sm">تأكيد كلمة المرور الجديدة *</label>
                     <div className="relative">
                       <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input
@@ -446,19 +443,19 @@ export default function WholesaleProfilePage() {
                     </div>
                   </div>
 
-                  <div className="flex gap-3 pt-2">
-                    <button type="submit" disabled={savingPw} className="btn btn-primary flex-1">
+                  <div className="flex gap-2.5 pt-2 border-t border-slate-100">
+                    <button type="submit" disabled={savingPw} className="btn btn-primary flex-1 py-2.5 text-xs sm:text-sm">
                       {savingPw ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
                       {savingPw ? 'جاري الحفظ...' : 'تغيير كلمة المرور'}
                     </button>
-                    <button type="button" onClick={() => setShowPasswordModal(false)} className="btn btn-ghost">
+                    <button type="button" onClick={() => setShowPasswordModal(false)} className="btn btn-ghost text-xs sm:text-sm">
                       إلغاء
                     </button>
                   </div>
                 </form>
-              </div>
-            </motion.div>
-          </>
+              </motion.div>
+            </div>
+          </div>
         )}
       </AnimatePresence>
     </div>

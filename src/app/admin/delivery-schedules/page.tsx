@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Truck, Calendar, MapPin, Store, Trash2, Search,
-  Loader2, RefreshCw, CheckCircle, Clock
+  Loader2, RefreshCw, CheckCircle, Clock, AlertTriangle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
@@ -24,6 +24,7 @@ function AdminDeliverySchedulesContent() {
   const [loading, setLoading] = useState(true)
   const [dayFilter, setDayFilter] = useState<number | null>(null)
   const [search, setSearch] = useState('')
+  const [scheduleToDelete, setScheduleToDelete] = useState<any | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const fetchSchedules = async () => {
@@ -43,21 +44,23 @@ function AdminDeliverySchedulesContent() {
     fetchSchedules()
   }, [dayFilter])
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('هل تريد حذف منطقة التوزيع هذه نهائياً كمسؤول؟')) return
+  const handleConfirmDelete = async () => {
+    if (!scheduleToDelete) return
+    const id = scheduleToDelete.id
     setDeletingId(id)
     try {
       const res = await fetch(`/api/wholesale/delivery-schedule/${id}`, {
         method: 'DELETE',
       })
       if (res.ok) {
-        toast.success('تم حذف السجل بنجاح')
+        toast.success('تم حذف السجل بنجاح ✅')
+        setScheduleToDelete(null)
         fetchSchedules()
       } else {
         toast.error('فشل في الحذف')
       }
     } catch {
-      toast.error('حدث خطأ')
+      toast.error('حدث خطأ في الاتصال')
     } finally {
       setDeletingId(null)
     }
@@ -215,7 +218,7 @@ function AdminDeliverySchedulesContent() {
 
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-end">
                   <button
-                    onClick={() => handleDelete(item.id)}
+                    onClick={() => setScheduleToDelete(item)}
                     disabled={deletingId === item.id}
                     className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-danger-600 transition-colors"
                     title="حذف من قبل الإدارة"
@@ -228,6 +231,56 @@ function AdminDeliverySchedulesContent() {
           </AnimatePresence>
         </div>
       )}
+
+      {/* Responsive Custom Delete Confirmation Modal */}
+      <AnimatePresence>
+        {scheduleToDelete && (
+          <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs">
+            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="w-full max-w-md bg-white rounded-2xl p-5 sm:p-6 text-right shadow-2xl border-2 border-red-200 my-auto overflow-hidden"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center text-danger-600 mb-4 mx-auto">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+
+                <h3 className="text-lg font-black text-slate-900 text-center mb-2">
+                  تأكيد حذف منطقة التوزيع
+                </h3>
+
+                <p className="text-xs sm:text-sm text-slate-600 text-center mb-4">
+                  هل أنت متأكد من حذف منطقة{' '}
+                  <span className="font-bold text-slate-800">"{scheduleToDelete.zoneName}"</span>{' '}
+                  التابعة للتاجر{' '}
+                  <span className="font-bold text-slate-800">"{scheduleToDelete.wholesale?.companyName}"</span>{' '}
+                  (يوم {scheduleToDelete.dayNameAr}) كمسؤول؟
+                </p>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleConfirmDelete}
+                    disabled={deletingId === scheduleToDelete.id}
+                    className="btn btn-sm sm:btn-md bg-danger-600 hover:bg-danger-700 text-white font-bold flex-1 shadow-danger"
+                  >
+                    {deletingId === scheduleToDelete.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    <span>{deletingId === scheduleToDelete.id ? 'جاري الحذف...' : 'نعم، احذف'}</span>
+                  </button>
+                  <button
+                    onClick={() => setScheduleToDelete(null)}
+                    disabled={Boolean(deletingId)}
+                    className="btn btn-sm sm:btn-md btn-ghost"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

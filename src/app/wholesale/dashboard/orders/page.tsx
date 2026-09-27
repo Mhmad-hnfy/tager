@@ -416,12 +416,13 @@ function WholesaleOrdersContent() {
 
       {/* Arrival Reminder Modal */}
       {reminderOrder && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
-          >
+        <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs">
+          <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden text-right my-auto"
+            >
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-white flex items-center justify-between">
               <div className="flex items-center gap-2.5">
@@ -572,6 +573,7 @@ function WholesaleOrdersContent() {
             </div>
           </motion.div>
         </div>
+      </div>
       )}
 
       {/* Invoice Modal */}

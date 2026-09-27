@@ -5,7 +5,7 @@ import { useSession, signOut } from 'next-auth/react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   LayoutDashboard, Package, FolderOpen, ClipboardList,
   User, LogOut, Bell, Store, Truck
@@ -13,7 +13,7 @@ import {
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { href: '/wholesale/dashboard', icon: LayoutDashboard, label: 'لوحة التحكم' },
+  { href: '/wholesale/dashboard', icon: LayoutDashboard, label: 'لوحة التحكم', exact: true },
   { href: '/wholesale/dashboard/products', icon: Package, label: 'المنتجات' },
   { href: '/wholesale/dashboard/categories', icon: FolderOpen, label: 'الأقسام' },
   { href: '/wholesale/dashboard/delivery-schedule', icon: Truck, label: 'جدول التوزيع والمناطق' },
@@ -21,18 +21,15 @@ const navItems = [
   { href: '/wholesale/dashboard/profile', icon: User, label: 'ملفي الشخصي' },
 ]
 
-const bottomNavItems = [
-  { href: '/wholesale/dashboard', icon: LayoutDashboard, label: 'الرئيسية' },
-  { href: '/wholesale/dashboard/products', icon: Package, label: 'المنتجات' },
-  { href: '/wholesale/dashboard/orders', icon: ClipboardList, label: 'الطلبات' },
-  { href: '/wholesale/dashboard/profile', icon: User, label: 'حسابي' },
-]
-
 export default function WholesaleLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { data: session } = useSession()
   const router = useRouter()
   const [notifCount, setNotifCount] = useState(0)
+  const activeTabRef = useRef<HTMLAnchorElement>(null)
+
+  const isActive = (item: { href: string; exact?: boolean }) =>
+    item.exact ? pathname === item.href : pathname.startsWith(item.href)
 
   useEffect(() => {
     const fetchNotifs = () => {
@@ -45,6 +42,16 @@ export default function WholesaleLayout({ children }: { children: React.ReactNod
     const interval = setInterval(fetchNotifs, 30000)
     return () => clearInterval(interval)
   }, [])
+
+  useEffect(() => {
+    if (activeTabRef.current) {
+      activeTabRef.current.scrollIntoView({
+        behavior: 'smooth',
+        inline: 'center',
+        block: 'nearest',
+      })
+    }
+  }, [pathname])
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -75,17 +82,17 @@ export default function WholesaleLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
           {navItems.map(item => (
             <Link
               key={item.href}
               href={item.href}
-              className={cn('nav-link', pathname === item.href && 'active')}
+              className={cn('nav-link', isActive(item) && 'active')}
             >
               <item.icon className="w-5 h-5 flex-shrink-0" />
-              {item.label}
+              <span>{item.label}</span>
               {item.href.includes('orders') && notifCount > 0 && (
-                <span className="mr-auto bg-danger-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                <span className="mr-auto bg-danger-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                   {notifCount}
                 </span>
               )}
@@ -100,70 +107,33 @@ export default function WholesaleLayout({ children }: { children: React.ReactNod
             className="nav-link w-full text-danger-600 hover:bg-red-50"
           >
             <LogOut className="w-5 h-5" />
-            تسجيل الخروج
+            <span>تسجيل الخروج</span>
           </button>
         </div>
       </aside>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white border-t border-slate-100 shadow-lg">
-        <div className="flex items-center justify-around">
-          {bottomNavItems.map(item => {
-            const isActive = pathname === item.href || (item.href !== '/wholesale/dashboard' && pathname.startsWith(item.href))
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex flex-col items-center gap-0.5 py-2 px-3 min-w-0 flex-1 relative transition-colors',
-                  isActive ? 'text-primary-700' : 'text-slate-400'
-                )}
-              >
-                <div className={cn('relative p-1.5 rounded-xl transition-colors', isActive && 'bg-primary-50')}>
-                  <item.icon className="w-5 h-5" />
-                  {item.href.includes('orders') && notifCount > 0 && (
-                    <span className="absolute -top-1 -left-1 bg-danger-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
-                      {notifCount > 9 ? '9+' : notifCount}
-                    </span>
-                  )}
-                </div>
-                <span className={cn('text-[10px] font-medium leading-tight', isActive ? 'text-primary-700' : 'text-slate-400')}>
-                  {item.label}
-                </span>
-                {isActive && (
-                  <motion.div
-                    layoutId="wholesale-tab-indicator"
-                    className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-primary-600 rounded-full"
-                  />
-                )}
-              </Link>
-            )
-          })}
-          <button
-            onClick={() => signOut({ callbackUrl: '/' })}
-            className="flex flex-col items-center gap-0.5 py-2 px-3 min-w-0 flex-1 text-danger-500 transition-colors"
-          >
-            <div className="p-1.5">
-              <LogOut className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] font-medium leading-tight">خروج</span>
-          </button>
-        </div>
-      </nav>
-
-      {/* Main Content */}
+      {/* Main Content Area */}
       <div className="flex-1 md:mr-64 flex flex-col min-h-screen">
         {/* Top bar */}
         <header className="bg-white border-b border-slate-100 h-16 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30">
-          {/* Logo for mobile */}
-          <Link href="/" className="md:hidden flex items-center gap-2">
-            <Image src="/logo.png" alt="تجارنا" width={32} height={32} className="rounded-lg" onError={(e: any) => { e.target.style.display = 'none' }} />
-            <span className="font-black text-primary-700 text-base">تجارنا</span>
-          </Link>
+          {/* Logo & Store name for mobile */}
+          <div className="flex items-center gap-2">
+            <Link href="/" className="md:hidden flex items-center gap-2">
+              <Image src="/logo.png" alt="تجارنا" width={32} height={32} className="rounded-lg" onError={(e: any) => { e.target.style.display = 'none' }} />
+              <span className="font-black text-primary-700 text-base">تجارنا</span>
+            </Link>
+            <span className="hidden sm:inline-block text-xs font-semibold px-2 py-0.5 rounded-md bg-primary-50 text-primary-700 border border-primary-100">
+              تاجر جملة
+            </span>
+          </div>
 
-          <div className="hidden md:block" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Phone/Name badge on mobile */}
+            <div className="text-right hidden sm:block">
+              <div className="text-xs font-bold text-slate-800 truncate max-w-[150px]">{session?.user?.name}</div>
+              <div className="text-[11px] text-slate-400" dir="ltr">{session?.user?.phone}</div>
+            </div>
 
-          <div className="flex items-center gap-3">
             {/* Notifications */}
             <Link href="/wholesale/dashboard/notifications" className="relative p-2 hover:bg-slate-100 rounded-xl transition-colors">
               <Bell className="w-5 h-5 text-slate-600" />
@@ -171,20 +141,67 @@ export default function WholesaleLayout({ children }: { children: React.ReactNod
                 <span className="notif-dot">{notifCount > 9 ? '9+' : notifCount}</span>
               )}
             </Link>
+
+            {/* Quick logout button on top bar */}
+            <button
+              onClick={() => signOut({ callbackUrl: '/' })}
+              className="p-2 rounded-xl text-slate-400 hover:text-danger-600 hover:bg-red-50 transition-colors"
+              title="تسجيل الخروج"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 p-4 sm:p-6 pb-20 md:pb-6">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            {children}
-          </motion.div>
+        {/* Page content - clean without motion.div to prevent fixed modals from breaking */}
+        <main className="flex-1 p-3 sm:p-4 md:p-6 pb-24 md:pb-6 overflow-x-hidden">
+          {children}
         </main>
       </div>
+
+      {/* ======= Mobile Bottom Navigation Bar (Scrollable for all tabs) ======= */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="flex items-center h-16 px-1">
+          {/* Scrollable Nav Items - 100% Identical to Sidebar */}
+          <div className="flex flex-1 items-center overflow-x-auto no-scrollbar scroll-smooth gap-1 py-1 h-full">
+            {navItems.map((item) => {
+              const active = isActive(item)
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  ref={active ? activeTabRef : undefined}
+                  className={cn(
+                    'flex flex-col items-center justify-center gap-0.5 px-2.5 py-1 min-w-[68px] flex-shrink-0 transition-all relative rounded-xl h-full select-none',
+                    active ? 'text-primary-700 font-bold' : 'text-slate-400 hover:text-slate-600'
+                  )}
+                >
+                  <div className={cn('relative p-1 rounded-lg transition-colors', active && 'bg-primary-50 text-primary-700')}>
+                    <item.icon className="w-5 h-5" />
+                    {item.href.includes('orders') && notifCount > 0 && (
+                      <span className="absolute -top-1 -left-1 bg-danger-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                        {notifCount > 9 ? '9+' : notifCount}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] truncate max-w-[68px] text-center leading-tight">
+                    {item.label}
+                  </span>
+                  {active && (
+                    <motion.div
+                      layoutId="wholesale-bottom-indicator"
+                      className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary-600 rounded-full"
+                    />
+                  )}
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      </nav>
     </div>
   )
 }

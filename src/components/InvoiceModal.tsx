@@ -212,7 +212,7 @@ export function InvoiceModal({ order, onClose }: InvoiceModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 print:p-0 print:bg-white print:static">
+    <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 print:p-0 print:bg-white print:static">
       <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[96vh] flex flex-col overflow-hidden shadow-2xl print:shadow-none print:max-w-none print:max-h-none print:w-full">
         {/* Action Header - Hidden during print */}
         <div className="p-3 sm:p-4 bg-slate-900 text-white flex items-center justify-between gap-2 print:hidden flex-wrap">

@@ -134,8 +134,126 @@ function AdminUsersContent() {
         </div>
       </div>
 
-      {/* Users Table */}
-      <div className="card overflow-hidden">
+      {/* Mobile Users Cards View (< md) */}
+      <div className="md:hidden space-y-3">
+        {loading ? (
+          <div className="card py-12 flex justify-center items-center">
+            <Loader2 className="w-7 h-7 animate-spin text-primary-600" />
+          </div>
+        ) : users.length === 0 ? (
+          <div className="card py-12 text-center text-slate-400 text-sm">لا يوجد مستخدمون</div>
+        ) : (
+          users.map((user, i) => {
+            const profile = user.wholesaleProfile || user.retailProfile
+            const name = user.wholesaleProfile?.companyName || user.retailProfile?.shopName || 'بدون اسم'
+            const isWholesale = user.role === 'WHOLESALE'
+
+            return (
+              <motion.div
+                key={user.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.02 }}
+                className="card p-4 space-y-3 border border-slate-100 shadow-xs"
+              >
+                {/* Header: Name, Role, Status */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={cn(
+                      'w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0',
+                      isWholesale ? 'bg-primary-50 text-primary-700' : 'bg-red-50 text-danger-600'
+                    )}>
+                      {isWholesale ? <Store className="w-4 h-4" /> : <ShoppingBag className="w-4 h-4" />}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-bold text-slate-900 text-sm truncate">{name}</div>
+                      <div className="text-xs text-slate-400">{profile?.ownerName || '-'}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <span className={cn('badge text-[11px] font-bold', isWholesale ? 'bg-primary-50 text-primary-700' : 'bg-red-50 text-danger-600')}>
+                      {isWholesale ? 'جملة' : 'تجزئة'}
+                    </span>
+                    <span className={cn('badge text-[11px] font-semibold', user.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')}>
+                      {user.status === 'ACTIVE' ? 'نشط' : 'موقوف'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Info rows */}
+                <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">رقم الهاتف:</span>
+                    <span dir="ltr" className="font-semibold text-slate-700">{user.phone}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">المنطقة:</span>
+                    <span className="font-semibold text-slate-700 truncate block">
+                      {profile?.wilaya?.nameAr || '-'} {profile?.commune ? `· ${profile.commune.nameAr}` : ''}
+                    </span>
+                  </div>
+                  {profile?.mapUrl && (
+                    <div className="col-span-2 pt-1 border-t border-slate-200/60 flex items-center justify-between">
+                      <span className="text-slate-400 text-[10px]">موقع المحل:</span>
+                      <a
+                        href={profile.mapUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-danger-600 hover:underline font-bold text-xs"
+                      >
+                        <MapPin className="w-3 h-3" />
+                        <span>فتح خرائط Google</span>
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                  <span className="text-[11px] text-slate-400">{formatDate(user.createdAt)}</span>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setSelectedUser(user)}
+                      className="btn btn-sm bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-2.5 py-1.5 flex items-center gap-1"
+                      title="عرض البيانات الكاملة"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-primary-600" />
+                      <span>التفاصيل</span>
+                    </button>
+
+                    <button
+                      onClick={() => toggleStatus(user.id, user.status)}
+                      disabled={updatingId === user.id}
+                      className={cn(
+                        'btn btn-sm text-xs px-2.5 py-1.5',
+                        user.status === 'ACTIVE' ? 'bg-amber-50 text-amber-800 hover:bg-amber-100' : 'bg-green-50 text-green-700 hover:bg-green-100'
+                      )}
+                      title={user.status === 'ACTIVE' ? 'إيقاف الحساب' : 'تفعيل الحساب'}
+                    >
+                      {updatingId === user.id ? <Loader2 className="w-3 h-3 animate-spin" /> :
+                        user.status === 'ACTIVE' ? 'إيقاف' : 'تفعيل'}
+                    </button>
+
+                    <button
+                      onClick={() => setUserToDelete(user)}
+                      className="btn btn-sm text-danger-600 hover:bg-red-50 p-2"
+                      title="حذف الحساب نهائياً"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-danger-600" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )
+          })
+        )}
+      </div>
+
+      {/* Desktop Users Table (>= md) */}
+      <div className="hidden md:block card overflow-hidden">
         <div className="table-container">
           <table className="table">
             <thead>
@@ -265,13 +383,14 @@ function AdminUsersContent() {
       {/* Full User Details Modal */}
       <AnimatePresence>
         {selectedUser && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl max-h-[92vh] flex flex-col"
-            >
+          <div className="fixed inset-0 z-[90] overflow-y-auto bg-black/60 backdrop-blur-xs">
+            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl max-h-[92vh] flex flex-col text-right my-auto"
+              >
               {/* Modal Header */}
               <div className="p-4 sm:p-5 bg-slate-900 text-white flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -462,7 +581,9 @@ function AdminUsersContent() {
               <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2">
                 <button
                   onClick={() => {
-                    setUserToDelete(selectedUser)
+                    const u = selectedUser
+                    setSelectedUser(null)
+                    setUserToDelete(u)
                   }}
                   className="btn btn-sm bg-red-50 text-danger-700 hover:bg-red-100 text-xs flex items-center gap-1 font-bold"
                 >
@@ -490,57 +611,60 @@ function AdminUsersContent() {
               </div>
             </motion.div>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
+    </AnimatePresence>
 
       {/* Delete User Confirmation Modal */}
       <AnimatePresence>
         {userToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl border-2 border-red-200"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center text-danger-600 mb-4 mx-auto">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
+          <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs">
+            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="bg-white rounded-2xl w-full max-w-md p-5 sm:p-6 shadow-2xl border-2 border-red-200 text-right my-auto overflow-hidden"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center text-danger-600 mb-4 mx-auto">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
 
-              <h3 className="text-lg font-black text-slate-900 text-center mb-2">
-                تأكيد حذف الحساب نهائياً
-              </h3>
+                <h3 className="text-lg font-black text-slate-900 text-center mb-2">
+                  تأكيد حذف الحساب نهائياً
+                </h3>
 
-              <p className="text-xs sm:text-sm text-slate-600 text-center mb-4">
-                هل أنت متأكد من رغبتك في حذف حساب{' '}
-                <span className="font-bold text-slate-800">
-                  {userToDelete.wholesaleProfile?.companyName || userToDelete.retailProfile?.shopName || userToDelete.phone}
-                </span>{' '}
-                نهائياً من المنصة؟
-              </p>
+                <p className="text-xs sm:text-sm text-slate-600 text-center mb-4">
+                  هل أنت متأكد من رغبتك في حذف حساب{' '}
+                  <span className="font-bold text-slate-800">
+                    {userToDelete.wholesaleProfile?.companyName || userToDelete.retailProfile?.shopName || userToDelete.phone}
+                  </span>{' '}
+                  نهائياً من المنصة؟
+                </p>
 
-              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-danger-700 mb-5 leading-relaxed">
-                ⚠️ <b>تحذير:</b> سيؤدي هذا الإجراء إلى حذف جميع المنتجات، والطلبيات، والملف الشخصي، وبيانات التوزيع المرتبطة بهذا الحساب بشكل نهائي ولا يمكن استرجاعها أبداً.
-              </div>
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-danger-700 mb-5 leading-relaxed">
+                  ⚠️ <b>تحذير:</b> سيؤدي هذا الإجراء إلى حذف جميع المنتجات، والطلبيات، والملف الشخصي، وبيانات التوزيع المرتبطة بهذا الحساب بشكل نهائي ولا يمكن استرجاعها أبداً.
+                </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleDeleteUser}
-                  disabled={deleting}
-                  className="btn btn-sm sm:btn-md bg-danger-600 hover:bg-danger-700 text-white font-bold flex-1 shadow-danger"
-                >
-                  {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                  <span>{deleting ? 'جاري الحذف...' : 'نعم، احذف الحساب نهائياً'}</span>
-                </button>
-                <button
-                  onClick={() => setUserToDelete(null)}
-                  disabled={deleting}
-                  className="btn btn-sm sm:btn-md btn-ghost"
-                >
-                  إلغاء
-                </button>
-              </div>
-            </motion.div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleDeleteUser}
+                    disabled={deleting}
+                    className="btn btn-sm sm:btn-md bg-danger-600 hover:bg-danger-700 text-white font-bold flex-1 shadow-danger"
+                  >
+                    {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    <span>{deleting ? 'جاري الحذف...' : 'نعم، احذف الحساب نهائياً'}</span>
+                  </button>
+                  <button
+                    onClick={() => setUserToDelete(null)}
+                    disabled={deleting}
+                    className="btn btn-sm sm:btn-md btn-ghost"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </motion.div>
+            </div>
           </div>
         )}
       </AnimatePresence>

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Trash2, FolderOpen, Loader2, X, Globe, Lock,
-  ChevronDown, ChevronRight, FolderTree, Tag, Package
+  ChevronDown, ChevronRight, FolderTree, Tag, Package, AlertTriangle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
@@ -25,6 +25,8 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [categoryToDelete, setCategoryToDelete] = useState<{ id: string; nameAr: string } | null>(null)
+  const [deletingCat, setDeletingCat] = useState(false)
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [form, setForm] = useState({
     nameAr: '',
@@ -80,17 +82,31 @@ export default function CategoriesPage() {
     finally { setSaving(false) }
   }
 
-  const handleDelete = async (id: string, hasChildren: boolean) => {
+  const handleRequestDelete = (cat: { id: string; nameAr: string }, hasChildren: boolean) => {
     if (hasChildren) {
       toast.error('لا يمكن حذف قسم يحتوي على فروع. احذف الفروع أولاً.')
       return
     }
-    if (!confirm('هل أنت متأكد من حذف هذا القسم/الفرع؟')) return
-    const res = await fetch(`/api/categories?id=${id}`, { method: 'DELETE' })
-    if (res.ok) { toast.success('تم الحذف بنجاح'); fetch_cats() }
-    else {
-      const data = await res.json()
-      toast.error(data.error || 'لا يمكن الحذف')
+    setCategoryToDelete({ id: cat.id, nameAr: cat.nameAr })
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!categoryToDelete) return
+    setDeletingCat(true)
+    try {
+      const res = await fetch(`/api/categories?id=${categoryToDelete.id}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.success('تم الحذف بنجاح ✅')
+        setCategoryToDelete(null)
+        fetch_cats()
+      } else {
+        const data = await res.json()
+        toast.error(data.error || 'لا يمكن الحذف')
+      }
+    } catch {
+      toast.error('حدث خطأ في الاتصال')
+    } finally {
+      setDeletingCat(false)
     }
   }
 
@@ -200,7 +216,7 @@ export default function CategoriesPage() {
                           فرع
                         </button>
                         <button
-                          onClick={() => handleDelete(cat.id, children.length > 0)}
+                          onClick={() => handleRequestDelete(cat, children.length > 0)}
                           className="p-1.5 rounded-lg text-slate-300 hover:bg-red-50 hover:text-danger-500 transition-colors"
                           title="حذف"
                         >
@@ -237,7 +253,7 @@ export default function CategoriesPage() {
                                 </span>
                               )}
                               <button
-                                onClick={() => handleDelete(child.id, false)}
+                                onClick={() => handleRequestDelete(child, false)}
                                 className="p-1.5 rounded-lg text-slate-300 hover:bg-red-50 hover:text-danger-500 transition-colors"
                                 title="حذف الفرع"
                               >
@@ -290,18 +306,20 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Add Modal */}
       <AnimatePresence>
         {showModal && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setShowModal(false)} className="fixed inset-0 bg-black/50 z-50" />
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm">
-                <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+          <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs">
+            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-sm my-auto text-right overflow-hidden border border-slate-100"
+              >
+                <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
                   <div>
-                    <h2 className="font-bold text-slate-800">
+                    <h2 className="font-bold text-slate-800 text-base sm:text-lg">
                       {form.parentId ? 'إضافة فرع جديد' : 'إضافة قسم رئيسي جديد'}
                     </h2>
                     {form.parentId && (
@@ -310,13 +328,13 @@ export default function CategoriesPage() {
                       </p>
                     )}
                   </div>
-                  <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-100 rounded-lg">
+                  <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
-                <form onSubmit={handleSave} className="p-5 space-y-4">
+                <form onSubmit={handleSave} className="p-4 sm:p-5 space-y-4">
                   <div className="form-group">
-                    <label className="form-label">{form.parentId ? 'اسم الفرع (عربي)' : 'اسم القسم (عربي)'} *</label>
+                    <label className="form-label text-xs sm:text-sm">{form.parentId ? 'اسم الفرع (عربي)' : 'اسم القسم (عربي)'} *</label>
                     <input
                       className="form-input"
                       placeholder={form.parentId ? 'مثال: بيبسي، كوكا كولا...' : 'مثال: مشروبات غازية، مواد غذائية...'}
@@ -327,11 +345,11 @@ export default function CategoriesPage() {
                     />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">الاسم بالفرنسية</label>
+                    <label className="form-label text-xs sm:text-sm">الاسم بالفرنسية</label>
                     <input className="form-input" value={form.nameFr} onChange={e => setForm(f => ({ ...f, nameFr: e.target.value }))} dir="ltr" />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">الأيقونة (emoji)</label>
+                    <label className="form-label text-xs sm:text-sm">الأيقونة (emoji)</label>
                     <input
                       className="form-input text-center text-2xl"
                       value={form.icon}
@@ -340,14 +358,66 @@ export default function CategoriesPage() {
                       maxLength={4}
                     />
                   </div>
-                  <button type="submit" disabled={saving} className="btn btn-primary w-full">
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    {form.parentId ? 'إضافة الفرع' : 'إضافة القسم'}
-                  </button>
+                  <div className="flex gap-2.5 pt-2 border-t border-slate-100">
+                    <button type="submit" disabled={saving} className="btn btn-primary flex-1 py-2.5 text-xs sm:text-sm">
+                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                      {form.parentId ? 'إضافة الفرع' : 'إضافة القسم'}
+                    </button>
+                    <button type="button" onClick={() => setShowModal(false)} className="btn btn-ghost text-xs sm:text-sm">
+                      إلغاء
+                    </button>
+                  </div>
                 </form>
-              </div>
-            </motion.div>
-          </>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {categoryToDelete && (
+          <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs">
+            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="w-full max-w-md bg-white rounded-2xl p-5 sm:p-6 text-right shadow-2xl border-2 border-red-200 my-auto overflow-hidden"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center text-danger-600 mb-4 mx-auto">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+
+                <h3 className="text-lg font-black text-slate-900 text-center mb-2">
+                  تأكيد حذف القسم / الفرع
+                </h3>
+
+                <p className="text-xs sm:text-sm text-slate-600 text-center mb-4">
+                  هل أنت متأكد من رغبتك في حذف{' '}
+                  <span className="font-bold text-slate-800">"{categoryToDelete.nameAr}"</span>؟
+                </p>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleConfirmDelete}
+                    disabled={deletingCat}
+                    className="btn btn-sm sm:btn-md bg-danger-600 hover:bg-danger-700 text-white font-bold flex-1 shadow-danger"
+                  >
+                    {deletingCat ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    <span>{deletingCat ? 'جاري الحذف...' : 'نعم، احذف'}</span>
+                  </button>
+                  <button
+                    onClick={() => setCategoryToDelete(null)}
+                    disabled={deletingCat}
+                    className="btn btn-sm sm:btn-md btn-ghost"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </div>
         )}
       </AnimatePresence>
     </div>

@@ -124,7 +124,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </header>
 
           {/* Main Content - extra bottom padding on mobile for bottom nav */}
-          <main className="flex-1 p-3 sm:p-4 md:p-6 bg-slate-50 pb-24 md:pb-6">
+          <main className="flex-1 p-3 sm:p-4 md:p-6 bg-slate-50 pb-24 md:pb-6 overflow-x-hidden">
             {children}
           </main>
         </div>
@@ -132,7 +132,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* ======= Mobile Bottom Navigation Bar (Same as Desktop Sidebar) ======= */}
       <nav
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex items-center h-16 px-1">

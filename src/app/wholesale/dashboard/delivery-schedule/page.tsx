@@ -47,6 +47,7 @@ export default function DeliverySchedulePage() {
   // Modal state
   const [modalOpen, setModalOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<DeliverySchedule | null>(null)
+  const [itemToDelete, setItemToDelete] = useState<DeliverySchedule | null>(null)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
@@ -163,21 +164,23 @@ export default function DeliverySchedulePage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('هل أنت متأكد من حذف هذه المنطقة من جدول التوزيع؟')) return
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete) return
+    const id = itemToDelete.id
     setDeletingId(id)
     try {
       const res = await fetch(`/api/wholesale/delivery-schedule/${id}`, {
         method: 'DELETE',
       })
       if (res.ok) {
-        toast.success('تم حذف المنطقة من الجدول')
+        toast.success('تم حذف المنطقة من الجدول بنجاح ✅')
+        setItemToDelete(null)
         fetchSchedules()
       } else {
-        toast.error('تعذر الحذف')
+        toast.error('تعذر الحذف، حاول مرة أخرى')
       }
     } catch {
-      toast.error('حدث خطأ')
+      toast.error('حدث خطأ في الاتصال')
     } finally {
       setDeletingId(null)
     }
@@ -371,7 +374,7 @@ export default function DeliverySchedulePage() {
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(item.id)}
+                      onClick={() => setItemToDelete(item)}
                       disabled={deletingId === item.id}
                       className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-danger-600 transition-colors"
                       title="حذف"
@@ -389,145 +392,195 @@ export default function DeliverySchedulePage() {
       {/* Add/Edit Modal */}
       <AnimatePresence>
         {modalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="card bg-white w-full max-w-lg overflow-hidden shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto"
-            >
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
-                <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center text-primary-700">
-                    <Truck className="w-4 h-4" />
+          <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs">
+            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="w-full max-w-lg bg-white rounded-2xl shadow-2xl p-4 sm:p-6 text-right my-auto border border-slate-100 overflow-hidden"
+              >
+                <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-xl bg-primary-50 flex items-center justify-center text-primary-700 flex-shrink-0">
+                      <Truck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-base">
+                        {editingItem ? 'تعديل منطقة التوزيع' : 'إضافة منطقة توزيع جديدة'}
+                      </h3>
+                      <p className="text-xs text-slate-400">حدد اليوم والولاية والمنطقة المراد التوزيع فيها</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-slate-800 text-base">
-                      {editingItem ? 'تعديل منطقة التوزيع' : 'إضافة منطقة توزيع جديدة'}
-                    </h3>
-                    <p className="text-xs text-slate-400">حدد اليوم والولاية والمنطقة المراد التوزيع فيها</p>
-                  </div>
-                </div>
-                <button onClick={() => setModalOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSave} className="space-y-4">
-                {/* Day of Week */}
-                <div className="form-group">
-                  <label className="form-label">يوم التوزيع الأسبوعي *</label>
-                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
-                    {DAYS_OF_WEEK.map(day => (
-                      <button
-                        type="button"
-                        key={day.value}
-                        onClick={() => setForm(f => ({ ...f, dayOfWeek: day.value, dayNameAr: day.label }))}
-                        className={cn(
-                          'py-2 px-1 rounded-xl text-xs font-bold border transition-all text-center',
-                          form.dayOfWeek === day.value
-                            ? 'bg-primary-700 text-white border-primary-700 shadow-xs'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                        )}
-                      >
-                        {day.label}
-                      </button>
-                    ))}
-                  </div>
+                  <button onClick={() => setModalOpen(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
 
-                {/* Wilaya Selection */}
-                <div className="form-group">
-                  <label className="form-label">الولاية (اختياري / حسب التوزيع)</label>
-                  <div className="relative">
-                    <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <select
-                      className="form-input pr-9 appearance-none"
-                      value={form.wilayaId}
-                      onChange={e => setForm(f => ({ ...f, wilayaId: e.target.value }))}
-                    >
-                      <option value="">-- جميع الولايات أو غير محدد --</option>
-                      {wilayas.map(w => (
-                        <option key={w.id} value={w.id}>
-                          {w.code} - {w.nameAr}
-                        </option>
+                <form onSubmit={handleSave} className="space-y-4 text-right">
+                  {/* Day of Week */}
+                  <div className="form-group">
+                    <label className="form-label text-xs sm:text-sm">يوم التوزيع الأسبوعي *</label>
+                    <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
+                      {DAYS_OF_WEEK.map(day => (
+                        <button
+                          type="button"
+                          key={day.value}
+                          onClick={() => setForm(f => ({ ...f, dayOfWeek: day.value, dayNameAr: day.label }))}
+                          className={cn(
+                            'py-2 px-1 rounded-xl text-xs font-bold border transition-all text-center',
+                            form.dayOfWeek === day.value
+                              ? 'bg-primary-700 text-white border-primary-700 shadow-xs'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          )}
+                        >
+                          {day.label}
+                        </button>
                       ))}
-                    </select>
+                    </div>
                   </div>
+
+                  {/* Wilaya Selection */}
+                  <div className="form-group">
+                    <label className="form-label text-xs sm:text-sm">الولاية (اختياري / حسب التوزيع)</label>
+                    <div className="relative">
+                      <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <select
+                        className="form-input pr-9 appearance-none"
+                        value={form.wilayaId}
+                        onChange={e => setForm(f => ({ ...f, wilayaId: e.target.value }))}
+                      >
+                        <option value="">-- جميع الولايات أو غير محدد --</option>
+                        {wilayas.map(w => (
+                          <option key={w.id} value={w.id}>
+                            {w.code} - {w.nameAr}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Zone Name */}
+                  <div className="form-group">
+                    <label className="form-label text-xs sm:text-sm">اسم المنطقة / الرمز *</label>
+                    <input
+                      className="form-input"
+                      placeholder="مثال: المنطقة A، أو أحياء شرق العاصمة، أو المنطقة K و B"
+                      value={form.zoneName}
+                      onChange={e => setForm(f => ({ ...f, zoneName: e.target.value }))}
+                      required
+                    />
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      يمكنك كتابة تسمية المناطق المعتمدة لديك (مثل: A, B, X, K...)
+                    </p>
+                  </div>
+
+                  {/* Communes / details */}
+                  <div className="form-group">
+                    <label className="form-label text-xs sm:text-sm">تفاصيل البلديات أو الأحياء المشمولة (اختياري)</label>
+                    <input
+                      className="form-input"
+                      placeholder="مثال: بئر خادم، حيدرة، بن عكنون، القبة..."
+                      value={form.communeNames}
+                      onChange={e => setForm(f => ({ ...f, communeNames: e.target.value }))}
+                    />
+                  </div>
+
+                  {/* Notes */}
+                  <div className="form-group">
+                    <label className="form-label text-xs sm:text-sm">ملاحظات التوزيع (مواعيد، شروط التوصيل)</label>
+                    <textarea
+                      className="form-input resize-none"
+                      rows={2}
+                      placeholder="مثال: التوزيع من 8 صباحاً إلى 2 ظهراً، الحد الأدنى للطلبية 20,000 د.ج"
+                      value={form.notes}
+                      onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                    />
+                  </div>
+
+                  {/* Active Toggle */}
+                  <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <input
+                      type="checkbox"
+                      id="isActive"
+                      checked={form.isActive}
+                      onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))}
+                      className="w-4 h-4 rounded text-primary-700 focus:ring-primary-500 cursor-pointer"
+                    />
+                    <label htmlFor="isActive" className="text-xs font-semibold text-slate-700 cursor-pointer select-none">
+                      تفعيل التوزيع في هذا اليوم والمنطقة حالياً
+                    </label>
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-2.5 pt-3 border-t border-slate-100">
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="btn btn-primary flex-1 shadow-sm text-xs sm:text-sm py-2.5"
+                    >
+                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                      {saving ? 'جاري الحفظ...' : editingItem ? 'حفظ التعديلات' : 'إضافة المنطقة'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModalOpen(false)}
+                      className="btn btn-ghost text-xs sm:text-sm"
+                    >
+                      إلغاء
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Responsive Custom Delete Confirmation Modal */}
+      <AnimatePresence>
+        {itemToDelete && (
+          <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs">
+            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="w-full max-w-md bg-white rounded-2xl p-5 sm:p-6 text-right shadow-2xl border-2 border-red-200 my-auto"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center text-danger-600 mb-4 mx-auto">
+                  <AlertCircle className="w-6 h-6" />
                 </div>
 
-                {/* Zone Name */}
-                <div className="form-group">
-                  <label className="form-label">اسم المنطقة / الرمز *</label>
-                  <input
-                    className="form-input"
-                    placeholder="مثال: المنطقة A، أو أحياء شرق العاصمة، أو المنطقة K و B"
-                    value={form.zoneName}
-                    onChange={e => setForm(f => ({ ...f, zoneName: e.target.value }))}
-                    required
-                  />
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    يمكنك كتابة تسمية المناطق المعتمدة لديك (مثل: A, B, X, K...)
-                  </p>
-                </div>
+                <h3 className="text-lg font-black text-slate-900 text-center mb-2">
+                  تأكيد حذف منطقة التوزيع
+                </h3>
 
-                {/* Communes / details */}
-                <div className="form-group">
-                  <label className="form-label">تفاصيل البلديات أو الأحياء المشمولة (اختياري)</label>
-                  <input
-                    className="form-input"
-                    placeholder="مثال: بئر خادم، حيدرة، بن عكنون، القبة..."
-                    value={form.communeNames}
-                    onChange={e => setForm(f => ({ ...f, communeNames: e.target.value }))}
-                  />
-                </div>
+                <p className="text-xs sm:text-sm text-slate-600 text-center mb-4">
+                  هل أنت متأكد من حذف منطقة{' '}
+                  <span className="font-bold text-slate-800">"{itemToDelete.zoneName}"</span>{' '}
+                  المقررة ليوم <span className="font-bold text-primary-700">{itemToDelete.dayNameAr}</span> من جدول التوزيع؟
+                </p>
 
-                {/* Notes */}
-                <div className="form-group">
-                  <label className="form-label">ملاحظات التوزيع (مواعيد، شروط التوصيل)</label>
-                  <textarea
-                    className="form-input resize-none"
-                    rows={2}
-                    placeholder="مثال: التوزيع من 8 صباحاً إلى 2 ظهراً، الحد الأدنى للطلبية 20,000 د.ج"
-                    value={form.notes}
-                    onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                  />
-                </div>
-
-                {/* Active Toggle */}
-                <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <input
-                    type="checkbox"
-                    id="isActive"
-                    checked={form.isActive}
-                    onChange={e => setForm(f => ({ ...f, isActive: e.target.checked }))}
-                    className="w-4 h-4 rounded text-primary-700 focus:ring-primary-500"
-                  />
-                  <label htmlFor="isActive" className="text-xs font-semibold text-slate-700 cursor-pointer">
-                    تفعيل التوزيع في هذا اليوم والمنطقة حالياً
-                  </label>
-                </div>
-
-                {/* Buttons */}
-                <div className="flex gap-3 pt-3 border-t border-slate-100">
+                <div className="flex items-center gap-3">
                   <button
-                    type="submit"
-                    disabled={saving}
-                    className="btn btn-primary flex-1 shadow-sm"
+                    onClick={handleConfirmDelete}
+                    disabled={deletingId === itemToDelete.id}
+                    className="btn btn-sm sm:btn-md bg-danger-600 hover:bg-danger-700 text-white font-bold flex-1 shadow-danger"
                   >
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                    {saving ? 'جاري الحفظ...' : editingItem ? 'حفظ التعديلات' : 'إضافة المنطقة'}
+                    {deletingId === itemToDelete.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    <span>{deletingId === itemToDelete.id ? 'جاري الحذف...' : 'نعم، احذف'}</span>
                   </button>
                   <button
-                    type="button"
-                    onClick={() => setModalOpen(false)}
-                    className="btn btn-ghost"
+                    onClick={() => setItemToDelete(null)}
+                    disabled={Boolean(deletingId)}
+                    className="btn btn-sm sm:btn-md btn-ghost"
                   >
                     إلغاء
                   </button>
                 </div>
-              </form>
-            </motion.div>
+              </motion.div>
+            </div>
           </div>
         )}
       </AnimatePresence>
