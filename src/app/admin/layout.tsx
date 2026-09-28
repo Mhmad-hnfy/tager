@@ -56,7 +56,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <>
       {/* ======= Main Layout ======= */}
-      <div className="min-h-screen bg-slate-900 flex">
+      <div className="min-h-screen bg-slate-900 flex flex-col md:flex-row w-full max-w-full overflow-x-hidden">
 
         {/* Desktop Sidebar */}
         <aside className="hidden md:flex flex-col w-64 bg-slate-800 fixed top-0 right-0 bottom-0 z-30 border-l border-slate-700">
@@ -86,7 +86,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </aside>
 
         {/* Content Area */}
-        <div className="flex-1 md:mr-64 flex flex-col min-h-screen">
+        <div className="flex-1 min-w-0 w-full max-w-full md:mr-64 flex flex-col min-h-screen">
 
           {/* Mobile Top Header */}
           <header className="md:hidden bg-slate-800 border-b border-slate-700 h-14 flex items-center justify-between px-4 sticky top-0 z-20">
@@ -124,7 +124,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </header>
 
           {/* Main Content - extra bottom padding on mobile for bottom nav */}
-          <main className="flex-1 p-3 sm:p-4 md:p-6 bg-slate-50 pb-24 md:pb-6 overflow-x-hidden">
+          <main className="flex-1 min-w-0 w-full max-w-full p-3 sm:p-4 md:p-6 bg-slate-50 pb-24 md:pb-6 overflow-x-hidden">
             {children}
           </main>
         </div>

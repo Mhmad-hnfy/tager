@@ -383,13 +383,13 @@ function AdminUsersContent() {
       {/* Full User Details Modal */}
       <AnimatePresence>
         {selectedUser && (
-          <div className="fixed inset-0 z-[90] overflow-y-auto bg-black/60 backdrop-blur-xs">
-            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
+          <div className="fixed inset-0 z-[90] w-screen h-screen overflow-y-auto bg-black/60 backdrop-blur-xs">
+            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl max-h-[92vh] flex flex-col text-right my-auto"
+                className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl max-h-[92vh] flex flex-col text-right my-auto mx-auto"
               >
               {/* Modal Header */}
               <div className="p-4 sm:p-5 bg-slate-900 text-white flex items-center justify-between">
@@ -618,13 +618,13 @@ function AdminUsersContent() {
       {/* Delete User Confirmation Modal */}
       <AnimatePresence>
         {userToDelete && (
-          <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs">
-            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
+          <div className="fixed inset-0 z-[100] w-screen h-screen overflow-y-auto bg-black/60 backdrop-blur-xs">
+            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center">
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="bg-white rounded-2xl w-full max-w-md p-5 sm:p-6 shadow-2xl border-2 border-red-200 text-right my-auto overflow-hidden"
+                className="bg-white rounded-2xl w-full max-w-md p-5 sm:p-6 shadow-2xl border-2 border-red-200 text-right my-auto overflow-hidden mx-auto"
               >
                 <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center text-danger-600 mb-4 mx-auto">
                   <AlertTriangle className="w-6 h-6" />

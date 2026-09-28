@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Cairo } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
@@ -9,6 +9,13 @@ const cairo = Cairo({
   weight: ['300', '400', '500', '600', '700', '800', '900'],
   variable: '--font-cairo',
 })
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
 
 export const metadata: Metadata = {
   title: 'تجارنا - من الجملة إلى محلك',

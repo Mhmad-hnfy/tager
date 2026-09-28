@@ -357,13 +357,13 @@ export default function WholesaleProfilePage() {
       {/* Change Password Modal */}
       <AnimatePresence>
         {showPasswordModal && (
-          <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs">
-            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
+          <div className="fixed inset-0 z-[100] w-screen h-screen overflow-y-auto bg-black/60 backdrop-blur-xs">
+            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-md my-auto text-right overflow-hidden border border-slate-100"
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-md my-auto text-right overflow-hidden border border-slate-100 mx-auto"
               >
                 <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
                   <div className="flex items-center gap-2">

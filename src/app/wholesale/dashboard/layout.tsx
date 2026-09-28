@@ -54,7 +54,7 @@ export default function WholesaleLayout({ children }: { children: React.ReactNod
   }, [pathname])
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row w-full max-w-full overflow-x-hidden">
       {/* Sidebar - Desktop */}
       <aside className="hidden md:flex flex-col w-64 bg-white border-l border-slate-100 fixed top-0 right-0 bottom-0 z-40 shadow-sm">
         {/* Logo */}
@@ -113,7 +113,7 @@ export default function WholesaleLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 md:mr-64 flex flex-col min-h-screen">
+      <div className="flex-1 min-w-0 w-full max-w-full md:mr-64 flex flex-col min-h-screen">
         {/* Top bar */}
         <header className="bg-white border-b border-slate-100 h-16 flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30">
           {/* Logo & Store name for mobile */}
@@ -154,7 +154,7 @@ export default function WholesaleLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page content - clean without motion.div to prevent fixed modals from breaking */}
-        <main className="flex-1 p-3 sm:p-4 md:p-6 pb-24 md:pb-6 overflow-x-hidden">
+        <main className="flex-1 min-w-0 w-full max-w-full p-3 sm:p-4 md:p-6 pb-24 md:pb-6 overflow-x-hidden">
           {children}
         </main>
       </div>

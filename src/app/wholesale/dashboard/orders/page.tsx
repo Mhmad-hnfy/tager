@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import {
   ClipboardList, Search, Filter, Check, X, Clock,
   Package, Loader2, ChevronDown, Phone, MapPin, Eye, FileText,
-  ExternalLink, Truck, Bell, Send, CheckCircle2, MessageCircle
+  ExternalLink, Truck, Bell, Send, CheckCircle2, MessageCircle, MessageSquare
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { cn, formatPrice, formatDate, getOrderStatusLabel, getOrderStatusColor, generateOrderNumber } from '@/lib/utils'
@@ -39,6 +39,13 @@ function WholesaleOrdersContent() {
   const [reminderSetOutForDelivery, setReminderSetOutForDelivery] = useState<boolean>(true)
   const [sendingReminder, setSendingReminder] = useState<boolean>(false)
   const [whatsappUrlAfterSend, setWhatsappUrlAfterSend] = useState<string | null>(null)
+
+  // Send Message Modal states
+  const [msgOrder, setMsgOrder] = useState<any | null>(null)
+  const [msgType, setMsgType] = useState<string>('ON_THE_WAY')
+  const [msgCustom, setMsgCustom] = useState<string>('')
+  const [sendingMsg, setSendingMsg] = useState<boolean>(false)
+  const [msgWhatsapp, setMsgWhatsapp] = useState<string | null>(null)
 
   const fetchOrders = async () => {
     setLoading(true)
@@ -81,6 +88,31 @@ function WholesaleOrdersContent() {
     setReminderCustomNote('')
     setReminderSetOutForDelivery(true)
     setWhatsappUrlAfterSend(null)
+  }
+
+  const openMsgModal = (order: any) => {
+    setMsgOrder(order)
+    setMsgType('ON_THE_WAY')
+    setMsgCustom('')
+    setMsgWhatsapp(null)
+  }
+
+  const handleSendMessage = async () => {
+    if (!msgOrder) return
+    setSendingMsg(true)
+    try {
+      const res = await fetch(`/api/orders/${msgOrder.id}/send-message`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageType: msgType, customMessage: msgCustom }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error || 'خطأ في إرسال الرسالة'); return }
+      toast.success('تم إرسال الرسالة بنجاح ✅')
+      if (data.whatsappUrl) setMsgWhatsapp(data.whatsappUrl)
+      else setMsgOrder(null)
+    } catch { toast.error('حدث خطأ في الاتصال') }
+    finally { setSendingMsg(false) }
   }
 
   const handleSendArrivalReminder = async () => {
@@ -224,6 +256,19 @@ function WholesaleOrdersContent() {
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation()
+                            openMsgModal(order)
+                          }}
+                          title="إرسال رسالة لتاجر التجزئة"
+                          className="btn btn-sm bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs flex items-center gap-1 shadow-xs"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">رسالة</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
                             setSelectedInvoiceOrder(order)
                           }}
                           className="btn btn-sm bg-slate-800 text-white hover:bg-slate-900 text-xs flex items-center gap-1 shadow-2xs"
@@ -283,6 +328,15 @@ function WholesaleOrdersContent() {
                                   <span>تنبيه بالوصول (خلال ساعة) 🔔</span>
                                 </button>
                               )}
+
+                              <button
+                                type="button"
+                                onClick={() => openMsgModal(order)}
+                                className="btn btn-sm bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                <span>إرسال رسالة للتاجر 💬</span>
+                              </button>
 
                               {order.retail?.mapUrl ? (
                                 <a
@@ -416,12 +470,12 @@ function WholesaleOrdersContent() {
 
       {/* Arrival Reminder Modal */}
       {reminderOrder && (
-        <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs">
-          <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
+        <div className="fixed inset-0 z-[100] w-screen h-screen overflow-y-auto bg-black/60 backdrop-blur-xs">
+          <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden text-right my-auto"
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden text-right my-auto mx-auto"
             >
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-5 text-white flex items-center justify-between">
@@ -582,6 +636,103 @@ function WholesaleOrdersContent() {
           order={selectedInvoiceOrder}
           onClose={() => setSelectedInvoiceOrder(null)}
         />
+      )}
+
+      {/* Send Message Modal */}
+      {msgOrder && (
+        <div className="fixed inset-0 z-[100] w-screen h-screen overflow-y-auto bg-black/60 backdrop-blur-xs">
+          <div className="min-h-full flex items-center justify-center p-3 sm:p-4">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden text-right mx-auto">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-5 text-white flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                    <MessageSquare className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base">إرسال رسالة لتاجر التجزئة</h3>
+                    <p className="text-blue-100 text-xs">{msgOrder.retail?.shopName}</p>
+                  </div>
+                </div>
+                <button onClick={() => setMsgOrder(null)} className="p-1.5 rounded-lg hover:bg-white/20 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-5 space-y-4">
+                {/* Message type */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-2">نوع الرسالة:</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: 'ON_THE_WAY', label: '🚚 أنا في الطريق' },
+                      { value: 'DELAYED', label: '⏳ سأتأخر قليلاً' },
+                      { value: 'READY', label: '✅ طلبك جاهز' },
+                      { value: 'CUSTOM', label: '💬 رسالة مخصصة' },
+                    ].map(t => (
+                      <button
+                        key={t.value}
+                        type="button"
+                        onClick={() => setMsgType(t.value)}
+                        className={cn(
+                          'py-2.5 px-3 rounded-xl border text-xs font-bold transition-all text-center',
+                          msgType === t.value
+                            ? 'border-blue-500 bg-blue-50 text-blue-900 shadow-xs'
+                            : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                        )}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom message input */}
+                {msgType === 'CUSTOM' && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">اكتب رسالتك:</label>
+                    <textarea
+                      rows={3}
+                      placeholder="مثال: يرجى الانتظار، أنا في الطريق وسأصل قريباً إن شاء الله"
+                      value={msgCustom}
+                      onChange={e => setMsgCustom(e.target.value)}
+                      className="form-input text-xs resize-none"
+                    />
+                  </div>
+                )}
+
+                {/* WhatsApp link after send */}
+                {msgWhatsapp && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 space-y-2 text-center">
+                    <div className="flex items-center justify-center gap-1.5 text-emerald-800 font-bold text-xs">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>تم إرسال الإشعار داخل التطبيق بنجاح!</span>
+                    </div>
+                    <a href={msgWhatsapp} target="_blank" rel="noopener noreferrer"
+                      className="btn btn-sm bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 w-full">
+                      <MessageCircle className="w-4 h-4" />
+                      فتح واتساب وإرسال الرسالة
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button type="button" onClick={() => setMsgOrder(null)} className="btn btn-ghost btn-sm text-xs">إلغاء</button>
+                <button
+                  type="button"
+                  onClick={handleSendMessage}
+                  disabled={sendingMsg || (msgType === 'CUSTOM' && !msgCustom.trim())}
+                  className="btn btn-sm bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold text-xs flex items-center gap-1.5"
+                >
+                  {sendingMsg ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /><span>جاري الإرسال...</span></> : <><Send className="w-3.5 h-3.5" /><span>إرسال الرسالة الآن</span></>}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

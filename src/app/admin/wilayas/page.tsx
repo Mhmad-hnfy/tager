@@ -191,9 +191,9 @@ export default function AdminWilayasPage() {
       {/* Add Wilaya Modal */}
       <AnimatePresence>
         {showModal && (
-          <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs">
-            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-4 sm:p-5 text-right my-auto border border-slate-100">
+          <div className="fixed inset-0 z-[100] w-screen h-screen overflow-y-auto bg-black/60 backdrop-blur-xs">
+            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-4 sm:p-5 text-right my-auto border border-slate-100 mx-auto">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                   <h2 className="font-bold text-slate-800 text-base">إضافة ولاية</h2>
                   <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
@@ -232,9 +232,9 @@ export default function AdminWilayasPage() {
       {/* Add Commune Modal */}
       <AnimatePresence>
         {showCommuneModal && (
-          <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs">
-            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
-              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-4 sm:p-5 text-right my-auto border border-slate-100">
+          <div className="fixed inset-0 z-[100] w-screen h-screen overflow-y-auto bg-black/60 backdrop-blur-xs">
+            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-4 sm:p-5 text-right my-auto border border-slate-100 mx-auto">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                   <h2 className="font-bold text-slate-800 text-base">إضافة بلدية</h2>
                   <button onClick={() => setShowCommuneModal(null)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
@@ -269,13 +269,13 @@ export default function AdminWilayasPage() {
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
         {wilayaToDelete && (
-          <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 backdrop-blur-xs">
-            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center sm:p-0">
+          <div className="fixed inset-0 z-[100] w-screen h-screen overflow-y-auto bg-black/60 backdrop-blur-xs">
+            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center">
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="w-full max-w-md bg-white rounded-2xl p-5 sm:p-6 text-right shadow-2xl border-2 border-red-200 my-auto overflow-hidden"
+                className="w-full max-w-md bg-white rounded-2xl p-5 sm:p-6 text-right shadow-2xl border-2 border-red-200 my-auto overflow-hidden mx-auto"
               >
                 <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center text-danger-600 mb-4 mx-auto">
                   <AlertTriangle className="w-6 h-6" />

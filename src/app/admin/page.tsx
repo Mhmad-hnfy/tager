@@ -2,7 +2,8 @@ import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import Link from 'next/link'
-import { Users, Package, ClipboardList, Store, ShoppingBag, TrendingUp, WifiOff, RefreshCw } from 'lucide-react'
+import { Users, Package, ClipboardList, Store, ShoppingBag, TrendingUp, WifiOff, RefreshCw, Bell } from 'lucide-react'
+import AdminNotifButton from './_components/AdminNotifButton'
 
 export default async function AdminPage() {
   const session = await auth()
@@ -48,9 +49,12 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h1 className="section-title">لوحة التحكم الرئيسية</h1>
-        <p className="section-subtitle">نظرة عامة على المنصة</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="section-title">لوحة التحكم الرئيسية</h1>
+          <p className="section-subtitle">نظرة عامة على المنصة</p>
+        </div>
+        <AdminNotifButton />        
       </div>
 
       {dbError && (
