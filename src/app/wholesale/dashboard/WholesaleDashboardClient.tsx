@@ -128,10 +128,21 @@ export function WholesaleDashboardClient({ profile, productCount, orderCounts, r
         transition={{ delay: 0.2 }}
         className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4"
       >
+        <Link href="/wholesale/dashboard/categories" className="card-hover p-5 flex items-center gap-4 group">
+          <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center group-hover:bg-purple-100 transition-colors">
+            <Star className="w-6 h-6 text-purple-600" />
+          </div>
+          <div>
+            <div className="font-semibold text-slate-800">إدارة الأقسام</div>
+            <div className="text-xs text-slate-400">تنظيم منتجاتك</div>
+          </div>
+          <ArrowLeft className="w-4 h-4 text-slate-300 mr-auto group-hover:text-slate-500 rtl-flip" />
+        </Link>
         <Link href="/wholesale/dashboard/products" className="card-hover p-5 flex items-center gap-4 group">
           <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center group-hover:bg-blue-100 transition-colors">
             <Package className="w-6 h-6 text-blue-600" />
           </div>
+          
           <div>
             <div className="font-semibold text-slate-800">إدارة المنتجات</div>
             <div className="text-xs text-slate-400">إضافة وتعديل المنتجات</div>
@@ -161,16 +172,6 @@ export function WholesaleDashboardClient({ profile, productCount, orderCounts, r
           <ArrowLeft className="w-4 h-4 text-slate-300 mr-auto group-hover:text-slate-500 rtl-flip" />
         </Link>
 
-        <Link href="/wholesale/dashboard/categories" className="card-hover p-5 flex items-center gap-4 group">
-          <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center group-hover:bg-purple-100 transition-colors">
-            <Star className="w-6 h-6 text-purple-600" />
-          </div>
-          <div>
-            <div className="font-semibold text-slate-800">إدارة الأقسام</div>
-            <div className="text-xs text-slate-400">تنظيم منتجاتك</div>
-          </div>
-          <ArrowLeft className="w-4 h-4 text-slate-300 mr-auto group-hover:text-slate-500 rtl-flip" />
-        </Link>
       </motion.div>
 
       {/* Recent Orders */}
