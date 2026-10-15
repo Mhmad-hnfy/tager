@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -8,9 +8,11 @@ import { motion } from 'framer-motion'
 import { signIn } from 'next-auth/react'
 import {
   ShoppingBag, User, Phone, Mail, Lock, Eye, EyeOff,
-  Loader2, AlertCircle, CheckCircle, ArrowRight, MapPin, Navigation, Home
+  Loader2, AlertCircle, CheckCircle, ArrowRight, MapPin, Navigation, Home, ChevronDown
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+
+interface Wilaya { id: string; nameAr: string; nameFr: string; code: string }
 
 export default function RetailRegisterPage() {
   const router = useRouter()
@@ -19,6 +21,8 @@ export default function RetailRegisterPage() {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [step, setStep] = useState(1) // Step 1: account info, Step 2: location
+  const [wilayas, setWilayas] = useState<Wilaya[]>([])
+  const [loadingWilayas, setLoadingWilayas] = useState(false)
 
   const [form, setForm] = useState({
     shopName: '',
@@ -27,12 +31,22 @@ export default function RetailRegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    wilaya: '',
+    wilayaId: '',
     zoneName: '',
     mapUrl: '',
   })
 
   const update = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }))
+
+  // جلب الولايات عند تحميل الصفحة
+  useEffect(() => {
+    setLoadingWilayas(true)
+    fetch('/api/wilayas')
+      .then(r => r.json())
+      .then(d => setWilayas(d.wilayas || []))
+      .catch(() => toast.error('تعذر جلب قائمة الولايات'))
+      .finally(() => setLoadingWilayas(false))
+  }, [])
 
   const handleDetectLocation = () => {
     if (!navigator.geolocation) {
@@ -79,6 +93,10 @@ export default function RetailRegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    if (!form.wilayaId) {
+      setError('يرجى اختيار الولاية')
+      return
+    }
     setLoading(true)
     try {
       const res = await fetch('/api/register', {
@@ -288,18 +306,32 @@ export default function RetailRegisterPage() {
           {/* STEP 2: Location & Zone */}
           {step === 2 && (
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Wilaya Input - Required Text */}
+              {/* Wilaya Dropdown */}
               <div className="form-group">
                 <label className="form-label font-bold text-slate-700">الولاية *</label>
                 <div className="relative">
-                  <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    className="form-input pr-9"
-                    placeholder="اكتب اسم ولايتك (مثال: الجزائر، وهران، سطيف...)"
-                    value={form.wilaya}
-                    onChange={e => update('wilaya', e.target.value)}
-                    required
-                  />
+                  <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none z-10" />
+                  <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none z-10" />
+                  {loadingWilayas ? (
+                    <div className="form-input pr-9 flex items-center gap-2 text-slate-400">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      جاري جلب الولايات...
+                    </div>
+                  ) : (
+                    <select
+                      className="form-input pr-9 pl-9 appearance-none cursor-pointer"
+                      value={form.wilayaId}
+                      onChange={e => update('wilayaId', e.target.value)}
+                      required
+                    >
+                      <option value="">-- اختر ولايتك --</option>
+                      {wilayas.map(w => (
+                        <option key={w.id} value={w.id}>
+                          {w.code} - {w.nameAr}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               </div>
 

@@ -84,40 +84,8 @@ export async function POST(req: NextRequest) {
       const parsed = retailSchema.safeParse(data)
       if (!parsed.success) return NextResponse.json({ error: 'البيانات غير صحيحة' }, { status: 400 })
 
-      // Match or resolve typed wilaya
-      let matchedWilayaId: string | null = data.wilayaId || null
-      const typedWilaya = (data.wilaya || data.wilayaName || '').trim()
-
-      if (!matchedWilayaId && typedWilaya) {
-        const cleanedWilaya = typedWilaya.replace(/^ولاية\s+/i, '').trim()
-        const found = await prisma.wilaya.findFirst({
-          where: {
-            OR: [
-              { nameAr: { contains: cleanedWilaya, mode: 'insensitive' } },
-              { nameFr: { contains: cleanedWilaya, mode: 'insensitive' } },
-              { code: cleanedWilaya },
-            ]
-          }
-        })
-
-        if (found) {
-          matchedWilayaId = found.id
-        } else {
-          try {
-            const randomCode = 'W' + Math.floor(1000 + Math.random() * 9000)
-            const created = await prisma.wilaya.create({
-              data: {
-                nameAr: cleanedWilaya,
-                nameFr: cleanedWilaya,
-                code: randomCode,
-              }
-            })
-            matchedWilayaId = created.id
-          } catch (e) {
-            console.error('Auto-create wilaya error:', e)
-          }
-        }
-      }
+      // wilayaId يأتي مباشرة من الـ dropdown في صفحة التسجيل
+      const matchedWilayaId: string | null = data.wilayaId || null
 
       const user = await prisma.user.create({
         data: {
