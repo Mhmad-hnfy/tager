@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -8,15 +8,19 @@ import { motion } from 'framer-motion'
 import { signIn } from 'next-auth/react'
 import {
   Building2, User, Phone, Mail, Lock, Eye, EyeOff,
-  Loader2, AlertCircle, CheckCircle, ArrowRight
+  Loader2, AlertCircle, CheckCircle, ArrowRight, MapPin, ChevronDown
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+
+interface Wilaya { id: string; nameAr: string; nameFr: string; code: string }
 
 export default function WholesaleRegisterPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [wilayas, setWilayas] = useState<Wilaya[]>([])
+  const [loadingWilayas, setLoadingWilayas] = useState(false)
 
   const [form, setForm] = useState({
     companyName: '',
@@ -25,9 +29,20 @@ export default function WholesaleRegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
+    wilayaId: '',
   })
 
   const update = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }))
+
+  // جلب الولايات عند تحميل الصفحة
+  useEffect(() => {
+    setLoadingWilayas(true)
+    fetch('/api/wilayas')
+      .then(r => r.json())
+      .then(d => setWilayas(d.wilayas || []))
+      .catch(() => toast.error('تعذر جلب قائمة الولايات'))
+      .finally(() => setLoadingWilayas(false))
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,6 +59,10 @@ export default function WholesaleRegisterPage() {
     const phoneClean = form.phone.replace(/\s/g, '')
     if (!/^(05|06|07)\d{8}$/.test(phoneClean)) {
       setError('رقم الهاتف يجب أن يبدأ بـ 05 أو 06 أو 07 ويتكون من 10 أرقام')
+      return
+    }
+    if (!form.wilayaId) {
+      setError('يرجى اختيار الولاية')
       return
     }
 
@@ -220,6 +239,39 @@ export default function WholesaleRegisterPage() {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+
+            {/* Wilaya Dropdown */}
+            <div className="form-group">
+              <label className="form-label font-bold text-slate-700">الولاية * <span className="text-xs font-normal text-slate-400">(ولاية نشاطك التجاري)</span></label>
+              <div className="relative">
+                <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none z-10" />
+                <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none z-10" />
+                {loadingWilayas ? (
+                  <div className="form-input pr-9 flex items-center gap-2 text-slate-400">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    جاري جلب الولايات...
+                  </div>
+                ) : wilayas.length === 0 ? (
+                  <div className="form-input pr-9 text-slate-400 text-sm">
+                    لا توجد ولايات متاحة بعد — تواصل مع الإدارة
+                  </div>
+                ) : (
+                  <select
+                    className="form-input pr-9 pl-9 appearance-none cursor-pointer"
+                    value={form.wilayaId}
+                    onChange={e => update('wilayaId', e.target.value)}
+                    required
+                  >
+                    <option value="">-- اختر ولايتك --</option>
+                    {wilayas.map(w => (
+                      <option key={w.id} value={w.id}>
+                        {w.code} - {w.nameAr}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
 
