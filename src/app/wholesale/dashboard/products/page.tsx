@@ -378,24 +378,26 @@ export default function ProductsPage() {
       {/* Add/Edit Modal */}
       <AnimatePresence>
         {showModal && (
-          <div className="fixed inset-0 z-[100] w-screen h-screen overflow-y-auto bg-black/60 backdrop-blur-xs">
-            <div className="min-h-full flex items-center justify-center p-3 sm:p-4 text-center">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-lg my-auto text-right overflow-hidden border border-slate-100 mx-auto"
-              >
-                <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
-                  <h2 className="font-bold text-slate-800 text-base sm:text-lg">
-                    {editingProduct ? 'تعديل المنتج' : 'إضافة منتج جديد'}
-                  </h2>
-                  <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
+          <div className="fixed inset-0 z-[100] flex flex-col bg-black/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              className="relative bg-white w-full h-full sm:h-auto sm:max-h-[92vh] sm:rounded-2xl sm:shadow-2xl sm:w-full sm:max-w-lg sm:m-auto sm:border sm:border-slate-100 flex flex-col text-right overflow-hidden"
+            >
+              {/* Header — always visible */}
+              <div className="flex-shrink-0 px-4 py-3 sm:px-5 sm:py-4 border-b border-slate-100 flex items-center justify-between bg-white z-10">
+                <h2 className="font-bold text-slate-800 text-base sm:text-lg">
+                  {editingProduct ? 'تعديل المنتج' : 'إضافة منتج جديد'}
+                </h2>
+                <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-                <form onSubmit={handleSave} className="p-5 space-y-4">
+              {/* Scrollable body */}
+              <div className="flex-1 overflow-y-auto overscroll-contain">
+                <form id="product-form" onSubmit={handleSave} className="p-4 sm:p-5 space-y-4">
                   {/* Images upload */}
                   <div className="form-group">
                     <label className="form-label">صور المنتج</label>
@@ -551,20 +553,30 @@ export default function ProductsPage() {
                       {form.isAvailable ? <ToggleRight className="w-8 h-8" /> : <ToggleLeft className="w-8 h-8" />}
                     </button>
                   </div>
-
-                  {/* Submit */}
-                  <div className="flex gap-2.5 pt-3 border-t border-slate-100">
-                    <button type="submit" disabled={saving} className="btn btn-primary flex-1 py-2.5 text-xs sm:text-sm">
-                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                      {saving ? 'جاري الحفظ...' : editingProduct ? 'حفظ التعديلات' : 'إضافة المنتج'}
-                    </button>
-                    <button type="button" onClick={() => setShowModal(false)} className="btn btn-ghost text-xs sm:text-sm">
-                      إلغاء
-                    </button>
-                  </div>
                 </form>
-              </motion.div>
-            </div>
+              </div>
+
+              {/* Footer — always visible at bottom */}
+              <div className="flex-shrink-0 px-4 pb-safe-or-4 pt-3 sm:px-5 border-t border-slate-100 bg-white flex gap-2.5"
+                style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)' }}>
+                <button
+                  type="submit"
+                  form="product-form"
+                  disabled={saving}
+                  className="btn btn-primary flex-1 py-3 text-sm font-semibold"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  {saving ? 'جاري الحفظ...' : editingProduct ? 'حفظ التعديلات' : 'إضافة المنتج'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="btn btn-ghost text-sm px-5"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>
